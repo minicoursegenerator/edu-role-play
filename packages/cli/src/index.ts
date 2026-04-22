@@ -4,6 +4,7 @@ import { initCommand } from "./commands/init.js";
 import { lintCommand } from "./commands/lint.js";
 import { bundleCommand } from "./commands/bundle.js";
 import { previewCommand } from "./commands/preview.js";
+import { startCommand } from "./commands/start.js";
 
 const program = new Command();
 program
@@ -45,6 +46,24 @@ program
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
     process.exit(bundleCommand(file, opts));
+  });
+
+program
+  .command("start")
+  .description("Bundle a composition (if needed) and open it in the default browser.")
+  .argument("<file>", "path to the composition HTML or a pre-bundled .bundled.html file")
+  .option("-o, --output <path>", "bundle output path (default: <input>.bundled.html)")
+  .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
+  .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY); only when baking a direct key")
+  .option("--account-id <id>", "Cloudflare account id (or set CLOUDFLARE_ACCOUNT_ID); only when baking a direct key")
+  .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
+  .option(
+    "--proxy-url <url>",
+    "route Cloudflare calls through a Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL)",
+  )
+  .option("--skip-lint", "skip lint check (not recommended)", false)
+  .action((file: string, opts) => {
+    process.exit(startCommand(file, opts));
   });
 
 program

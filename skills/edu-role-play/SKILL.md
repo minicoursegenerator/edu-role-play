@@ -99,14 +99,15 @@ Failing any of these blocks `bundle`.
 
 ## 8. Output checklist
 
-After writing or editing a composition, do all of these yourself — do not ask the user to run commands:
+After writing or editing a composition:
 
-1. Run `node ${CLAUDE_SKILL_DIR}/scripts/validate.mjs <file>` (or `npx -y edu-role-play lint <file>`).
-2. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
-3. **Bundle immediately** with `npx -y edu-role-play bundle <file>` — no flags needed. The CLI defaults to routing through the hosted Mini Course Generator Workers AI proxy, so no API key or account ID is required. Never ask the user for an API key.
-4. Tell the user: **"Open `<file>.bundled.html` in a browser to try the role-play."** Give the absolute path.
+1. **You** (the agent) run `node ${CLAUDE_SKILL_DIR}/scripts/validate.mjs <file>` (or `npx -y edu-role-play lint <file>`). Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
+2. **Do not bundle yourself.** Do not ask the user for an API key.
+3. Tell the user, as the final message, a single line:
+   > Run `npx edu-role-play start <file>` to try the role-play.
+   Use the filename (or absolute path) that matches what you wrote. `start` bundles with the default Mini Course Generator proxy and opens the result in the user's browser.
 
-Only use `--api-key <…> --account-id <…>` if the user *explicitly* asks to bake in their own Cloudflare key. Only use `--proxy-url <…>` if the user *explicitly* asks to route through their own proxy.
+Only suggest `--api-key <…> --account-id <…>` if the user *explicitly* asks to bake in their own Cloudflare key. Only suggest `--proxy-url <…>` if the user *explicitly* asks to route through their own proxy.
 
 ## 9. On-demand references
 
