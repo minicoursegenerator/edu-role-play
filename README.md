@@ -6,15 +6,41 @@ Inspired by [HyperFrames](https://github.com/heygen-com/hyperframes): HTML-first
 
 ## Install
 
+### Option 1: With an AI coding agent (recommended)
+
+Install the edu-role-play skill, then describe the role-play you want:
+
 ```bash
 npx skills add minicoursegenerator/edu-role-play
 ```
 
-This installs the skill so your agent knows how to author role-plays.
+This teaches your agent (Claude Code, Cursor, Gemini CLI, Codex) how to author pedagogically sound compositions, validate them, and bundle them into self-contained HTML. In Claude Code, the skill registers as a slash command — invoke `/edu-role-play` to start authoring.
+
+Target a specific agent:
+
+```bash
+npx skills add minicoursegenerator/edu-role-play -a claude-code
+npx skills add minicoursegenerator/edu-role-play -a cursor
+```
+
+Install globally (available in every project):
+
+```bash
+npx skills add minicoursegenerator/edu-role-play -g
+```
+
+### Option 2: Clone the repo
+
+```bash
+git clone https://github.com/minicoursegenerator/edu-role-play
+cd edu-role-play && npm install && npm run build
+```
+
+Then use `npx edu-role-play init|lint|bundle|preview` directly.
 
 ## Quick start
 
-In your agent, invoke the skill by name and describe the role-play you want:
+In your agent, invoke the skill and describe the role-play you want:
 
 ```
 Using /edu-role-play, create a role-play where a sales rep practices
