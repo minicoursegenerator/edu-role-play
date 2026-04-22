@@ -34,8 +34,28 @@ If the user is vague, ask the smallest next question. Do not invent content that
 
 ## 3. Composition structure
 
+Wrap the composition in the standard HTML shell below. The `<style>` block and the "not bundled yet" `<div data-erp-fallback>` are **required** — they turn the raw source into a self-explaining page when a user opens it directly in a browser. The runtime wipes the `<edu-role-play>` contents on mount, so these have no effect on the bundled output.
+
 ```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>my-roleplay</title>
+    <style>
+      edu-role-play > :not([data-erp-fallback]) { display: none; }
+      [data-erp-fallback].notice { display: block; font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; line-height: 1.5; }
+      [data-erp-fallback] h2 { margin: 0 0 8px 0; font-size: 18px; }
+      [data-erp-fallback] pre { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 13px; }
+    </style>
+  </head>
+  <body>
 <edu-role-play id="my-roleplay" runtime-version="0.1.0">
+  <div class="notice" data-erp-fallback>
+    <h2>This role-play isn't bundled yet</h2>
+    <p>Open a terminal in this folder and run:</p>
+    <pre><code>npx edu-role-play start my-roleplay.html</code></pre>
+  </div>
   <edu-persona name="Sarah Chen" role="VP of Operations">
     <background>15 years in logistics. Burned by a CRM migration in 2023.</background>
     <goals>Cut vendor count by 30% before Q4 board review.</goals>
@@ -64,6 +84,8 @@ If the user is vague, ask the smallest next question. Do not invent content that
     <manual-end>true</manual-end>
   </edu-termination>
 </edu-role-play>
+  </body>
+</html>
 ```
 
 ## 4. Persona design
@@ -99,13 +121,18 @@ Failing any of these blocks `bundle`.
 
 ## 8. Output checklist
 
-After writing or editing a composition:
+Each role-play gets its own folder so files don't pile up in the user's working directory.
 
-1. **You** (the agent) run `node ${CLAUDE_SKILL_DIR}/scripts/validate.mjs <file>` (or `npx -y edu-role-play lint <file>`). Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
-2. **Do not bundle yourself.** Do not ask the user for an API key.
-3. Tell the user, as the final message, a single line:
-   > Run `npx edu-role-play start <file>` to try the role-play.
-   Use the filename (or absolute path) that matches what you wrote. `start` bundles with the default Mini Course Generator proxy and opens the result in the user's browser.
+1. Pick a short kebab-case slug (e.g. `gdpr-sar-audit`). Create the folder: the composition file path is `<slug>/<slug>.html`.
+2. Write the composition to `<slug>/<slug>.html`.
+3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.html`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
+4. **Do not bundle yourself.** Do not ask the user for an API key.
+5. Tell the user, as the final message, these two lines verbatim (substituting the slug):
+   ```
+   cd <slug>
+   npx edu-role-play start <slug>.html
+   ```
+   `start` bundles with the default Mini Course Generator proxy and opens the result in the user's browser.
 
 Only suggest `--api-key <…> --account-id <…>` if the user *explicitly* asks to bake in their own Cloudflare key. Only suggest `--proxy-url <…>` if the user *explicitly* asks to route through their own proxy.
 
