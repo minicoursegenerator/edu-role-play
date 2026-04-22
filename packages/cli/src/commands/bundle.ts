@@ -15,6 +15,10 @@ interface BundleOptions {
 }
 
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Mini Course Generator's hosted Workers AI proxy. Used by default so `edu-role-play bundle`
+// works out of the box with no API key required. Power users can override with
+// --proxy-url / EDU_ROLE_PLAY_PROXY_URL, or bypass entirely with --api-key + --account-id.
+const DEFAULT_PROXY_URL = "https://erp-proxy.eren-be8.workers.dev";
 
 export function bundleCommand(file: string, opts: BundleOptions): number {
   const path = resolve(process.cwd(), file);
@@ -38,8 +42,9 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     console.error(`Unknown provider: ${provider}. Only 'cloudflare' is supported in v1.`);
     return 1;
   }
-  const proxyUrl = opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "";
   const model = opts.model ?? DEFAULT_MODEL;
+  const explicitKey = opts.apiKey ?? process.env.EDU_ROLE_PLAY_API_KEY ?? "";
+  const explicitProxy = opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "";
 
   let config: {
     provider: string;
@@ -49,25 +54,25 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     baseUrl?: string;
   };
 
-  if (proxyUrl) {
-    // Proxy mode: the Worker holds the Cloudflare token and account ID.
-    // Bundle ships neither; runtime calls `${proxyUrl}/ai/run/<model>`.
-    config = { provider, apiKey: "", accountId: "", model, baseUrl: proxyUrl };
-    console.log(`Bundling with proxy: ${proxyUrl} (Cloudflare key not baked).`);
-  } else {
-    const apiKey = opts.apiKey ?? process.env.EDU_ROLE_PLAY_API_KEY ?? "";
+  if (explicitKey) {
+    // Direct-Cloudflare mode: user supplied a key, bake it in and skip the proxy.
     const accountId = opts.accountId ?? process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
-    if (!apiKey) {
-      console.error(
-        "Missing --api-key (or EDU_ROLE_PLAY_API_KEY env var). Alternatively, set EDU_ROLE_PLAY_PROXY_URL to use a Worker proxy.",
-      );
-      return 1;
-    }
     if (!accountId) {
       console.error("Missing --account-id (or CLOUDFLARE_ACCOUNT_ID env var).");
       return 1;
     }
-    config = { provider, apiKey, accountId, model };
+    config = { provider, apiKey: explicitKey, accountId, model };
+  } else {
+    // Proxy mode (default). The Worker holds the Cloudflare token.
+    const proxyUrl = explicitProxy || DEFAULT_PROXY_URL;
+    config = { provider, apiKey: "", accountId: "", model, baseUrl: proxyUrl };
+    if (explicitProxy) {
+      console.log(`Bundling with proxy: ${proxyUrl} (Cloudflare key not baked).`);
+    } else {
+      console.log(
+        `Bundling with default Mini Course Generator proxy. Pass --api-key + --account-id for a direct-Cloudflare bundle, or --proxy-url to use your own proxy.`,
+      );
+    }
   }
 
   const runtimeJs = readFileSync(runtimeIifePath(), "utf8");
@@ -88,9 +93,9 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
   writeFileSync(outPath, output, "utf8");
   const hash = recordBundle(comp.id || file, path, outPath, output);
   console.log(`Bundled ${path} → ${outPath} (hash ${hash}).`);
-  if (!proxyUrl) {
+  if (explicitKey) {
     console.log(
-      `Warning: the API key is embedded in source. Use a workspace-scoped key with tight rate limits, or set EDU_ROLE_PLAY_PROXY_URL to route through a Worker proxy.`,
+      `Warning: the API key is embedded in source. Use a workspace-scoped key with tight rate limits.`,
     );
   }
   return 0;
