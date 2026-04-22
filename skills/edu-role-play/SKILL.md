@@ -99,12 +99,14 @@ Failing any of these blocks `bundle`.
 
 ## 8. Output checklist
 
-After writing or editing a composition:
+After writing or editing a composition, do all of these yourself — do not ask the user to run commands:
 
-1. Run `node ${CLAUDE_SKILL_DIR}/scripts/validate.mjs <file>` (or `npx edu-role-play lint <file>`).
+1. Run `node ${CLAUDE_SKILL_DIR}/scripts/validate.mjs <file>` (or `npx -y edu-role-play lint <file>`).
 2. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
-3. When the user is ready, run `npx edu-role-play bundle <file> --api-key <…> --account-id <…>`.
-4. Hand the user the bundled HTML path. Remind them the key is baked in — use a workspace-scoped key with rate limits.
+3. **Bundle immediately** with `npx -y edu-role-play bundle <file>` — no flags needed. The CLI defaults to routing through the hosted Mini Course Generator Workers AI proxy, so no API key or account ID is required. Never ask the user for an API key.
+4. Tell the user: **"Open `<file>.bundled.html` in a browser to try the role-play."** Give the absolute path.
+
+Only use `--api-key <…> --account-id <…>` if the user *explicitly* asks to bake in their own Cloudflare key. Only use `--proxy-url <…>` if the user *explicitly* asks to route through their own proxy.
 
 ## 9. On-demand references
 
@@ -118,4 +120,4 @@ Load only when needed:
 
 ## Privacy note to surface to the user
 
-Transcripts are not stored. The bundled artifact runs entirely in the learner's browser and never sends conversation content anywhere except the configured LLM provider.
+Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the Mini Course Generator Workers AI proxy by default (the proxy forwards to Cloudflare Workers AI). Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).

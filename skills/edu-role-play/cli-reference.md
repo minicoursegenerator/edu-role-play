@@ -10,11 +10,15 @@ Scaffolds `<name>.html` from an archetype (e.g. `skeptical-buyer`) or the blank 
 
 Validates the composition. Exits 0 on success, 1 on any error. Warnings do not fail.
 
-## `edu-role-play bundle <file> [-o <out>] --api-key <key> --account-id <id> [--model <id>] [--skip-lint]`
+## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--proxy-url <url>] [--api-key <key> --account-id <id>] [--skip-lint]`
 
 Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.bundled.html`. Default model: `@cf/meta/llama-3.1-8b-instruct`.
 
-Env fallbacks: `EDU_ROLE_PLAY_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`.
+**By default** (no flags, no env vars) the bundle routes inference through the hosted Mini Course Generator Workers AI proxy — no API key needed, and no key is baked into the HTML. This is the path to use 99% of the time.
+
+Overrides:
+- `--proxy-url <url>` (or `EDU_ROLE_PLAY_PROXY_URL`): route through your own Worker proxy instead of the MCG default.
+- `--api-key <key> --account-id <id>` (or `EDU_ROLE_PLAY_API_KEY` + `CLOUDFLARE_ACCOUNT_ID`): skip the proxy and bake a Cloudflare key directly into the HTML. The key will be visible in the artifact's source; use a workspace-scoped, rate-limited key.
 
 ## `edu-role-play preview <file> [--port <n>] --api-key <key> --account-id <id>`
 
