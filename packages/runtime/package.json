@@ -4,12 +4,32 @@
   "description": "Browser runtime for edu-role-play (chat loop, scoring, UI). Built to an inlineable IIFE.",
   "license": "MIT",
   "type": "module",
+  "exports": {
+    "./iife": "./dist/runtime.iife.js",
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minicoursegenerator/edu-role-play.git",
+    "directory": "packages/runtime"
+  },
+  "homepage": "https://github.com/minicoursegenerator/edu-role-play#readme",
+  "bugs": "https://github.com/minicoursegenerator/edu-role-play/issues",
+  "keywords": [
+    "edu-role-play",
+    "role-play",
+    "runtime"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node build.mjs",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",

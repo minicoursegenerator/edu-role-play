@@ -15,9 +15,26 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minicoursegenerator/edu-role-play.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/minicoursegenerator/edu-role-play#readme",
+  "bugs": "https://github.com/minicoursegenerator/edu-role-play/issues",
+  "keywords": [
+    "edu-role-play",
+    "role-play",
+    "education",
+    "agent-skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "node-html-parser": "^6.1.13"

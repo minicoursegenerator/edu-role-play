@@ -1,5 +1,5 @@
 {
-  "name": "@edu-role-play/cli",
+  "name": "edu-role-play",
   "version": "0.1.0",
   "description": "CLI for edu-role-play: init, preview, lint, bundle.",
   "license": "MIT",
@@ -11,9 +11,28 @@
     "dist",
     "templates"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minicoursegenerator/edu-role-play.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/minicoursegenerator/edu-role-play#readme",
+  "bugs": "https://github.com/minicoursegenerator/edu-role-play/issues",
+  "keywords": [
+    "edu-role-play",
+    "role-play",
+    "education",
+    "agent-skills",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
-    "clean": "rm -rf dist"
+    "sync-templates": "node scripts/sync-templates.mjs",
+    "build": "npm run sync-templates && tsc -p tsconfig.json && chmod +x dist/index.js",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
     "@edu-role-play/core": "0.1.0",
