@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{id}}</title>
+  </head>
+  <body>
+    <edu-role-play id="{{id}}" runtime-version="{{runtimeVersion}}">
+      <edu-persona name="Sarah Chen" role="VP of Operations">
+        <background>15 years in logistics. Burned by a failed CRM migration in 2023 championed by her predecessor. Evaluates vendors by peer references first, demo second.</background>
+        <goals>Cut vendor count by 30% before Q4 board review. Wants a named reference customer in the 3PL segment.</goals>
+        <constraints>Budget locked until Q3. Won't sign without a named peer reference. No pilots longer than 60 days.</constraints>
+        <speech-patterns>Interrupts vague claims with "what does that mean specifically?". Asks for numbers within two turns. Dry, not hostile.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are an account executive pitching Acme CRM to Sarah Chen. You have roughly 15 minutes with her. Your job is to surface a real operational pain she owns, get her to quantify it, and secure a concrete follow-up.
+      </edu-scenario>
+
+      <edu-objective id="surface-pain">Surface a specific operational pain Sarah owns and ties to a process.</edu-objective>
+      <edu-objective id="quantify-impact">Get Sarah to share a dollar, hour, or headcount number tied to that pain.</edu-objective>
+      <edu-objective id="book-followup">Secure a follow-up meeting with a date and named attendees.</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="surface-pain" weight="3">Full credit (3): learner elicits a pain that is specific, Sarah-owned, and tied to a process. Partial (1-2): pain is generic or not Sarah-owned. None (0): learner supplies the pain or Sarah never confirms one.</criterion>
+        <criterion objective="quantify-impact" weight="4">Full credit (4): Sarah volunteers a dollar / hour / headcount number. Partial (1-3): learner has to propose a number Sarah then accepts. None (0): no number surfaces.</criterion>
+        <criterion objective="book-followup" weight="3">Full credit (3): concrete date + named attendees agreed. Partial (1-2): date only or vague "next week". None (0): no follow-up committed.</criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>20</turn-limit>
+        <objective-check-every>3</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>

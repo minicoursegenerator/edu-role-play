@@ -1,0 +1,28 @@
+{
+  "name": "@edu-role-play/core",
+  "version": "0.1.0",
+  "description": "Composition parser, linter rules, and types for edu-role-play.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./parser": "./dist/parser.js",
+    "./linter": "./dist/linter.js",
+    "./types": "./dist/types.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "node-html-parser": "^6.1.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

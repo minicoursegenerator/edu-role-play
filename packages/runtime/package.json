@@ -1,0 +1,18 @@
+{
+  "name": "@edu-role-play/runtime",
+  "version": "0.1.0",
+  "description": "Browser runtime for edu-role-play (chat loop, scoring, UI). Built to an inlineable IIFE.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "typescript": "^5.4.5"
+  }
+}

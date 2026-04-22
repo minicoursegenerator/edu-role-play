@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{id}}</title>
+  </head>
+  <body>
+    <edu-role-play id="{{id}}" runtime-version="{{runtimeVersion}}">
+      <edu-persona name="PERSONA NAME" role="ROLE">
+        <background>One paragraph of background, tenure, domain context.</background>
+        <goals>What this persona wants out of the conversation.</goals>
+        <constraints>Hard limits (budget, time, policy) that shape their replies.</constraints>
+        <speech-patterns>Tone, pacing, habits of speech. Concrete and specific.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are [LEARNER ROLE]. You are about to [DO SOMETHING] with PERSONA NAME.
+        Describe the setting and what the learner is trying to accomplish.
+      </edu-scenario>
+
+      <edu-objective id="objective-one">State an observable action the learner must take.</edu-objective>
+      <edu-objective id="objective-two">Another observable action.</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="objective-one" weight="3">
+          How full credit looks vs. partial vs. none.
+        </criterion>
+        <criterion objective="objective-two" weight="3">
+          How full credit looks vs. partial vs. none.
+        </criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>20</turn-limit>
+        <objective-check-every>3</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>

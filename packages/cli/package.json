@@ -1,0 +1,27 @@
+{
+  "name": "@edu-role-play/cli",
+  "version": "0.1.0",
+  "description": "CLI for edu-role-play: init, preview, lint, bundle.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "edu-role-play": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@edu-role-play/core": "0.1.0",
+    "@edu-role-play/runtime": "0.1.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "typescript": "^5.4.5"
+  }
+}

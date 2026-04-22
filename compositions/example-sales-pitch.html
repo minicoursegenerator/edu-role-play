@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>example-sales-pitch</title>
+  </head>
+  <body>
+    <edu-role-play id="example-sales-pitch" runtime-version="0.1.0">
+      <edu-persona name="Sarah Chen" role="VP of Operations">
+        <background>15 years in logistics. Burned by a failed CRM migration in 2023 that her predecessor championed.</background>
+        <goals>Cut vendor count by 30% before Q4 board review. Wants a named reference customer in 3PL.</goals>
+        <constraints>Budget locked until Q3. Won't sign without a peer reference. No pilots over 60 days.</constraints>
+        <speech-patterns>Direct. Asks for specifics. Interrupts vague claims within two turns.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are an account executive pitching Acme CRM to Sarah Chen. You have roughly 15 minutes to surface a real operational pain, quantify it, and secure a follow-up.
+      </edu-scenario>
+
+      <edu-objective id="surface-pain">Surface a specific operational pain Sarah owns.</edu-objective>
+      <edu-objective id="quantify-impact">Get Sarah to share a dollar, hour, or headcount number.</edu-objective>
+      <edu-objective id="book-followup">Secure a follow-up meeting with date and attendees.</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="surface-pain" weight="3">Full credit (3): pain is specific, Sarah-owned, tied to a process.</criterion>
+        <criterion objective="quantify-impact" weight="4">Full credit (4): Sarah volunteers a number.</criterion>
+        <criterion objective="book-followup" weight="3">Full credit (3): follow-up has date + named attendees.</criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>20</turn-limit>
+        <objective-check-every>3</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>
