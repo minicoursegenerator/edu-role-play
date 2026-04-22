@@ -1,9 +1,18 @@
+export type ProviderId = "cloudflare" | "openai" | "anthropic";
+
 export interface RuntimeConfig {
-  provider: "cloudflare";
+  provider: ProviderId;
   apiKey: string;
   accountId?: string;
   model: string;
   baseUrl?: string;
+}
+
+export interface UserKeyConfig {
+  provider: ProviderId;
+  apiKey: string;
+  accountId?: string;
+  model?: string;
 }
 
 export interface PersonaData {

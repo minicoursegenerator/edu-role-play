@@ -1,10 +1,13 @@
 import { reinjectSystem } from "./chat";
 import { readCompositionFromDom } from "./composition-reader";
 import { detectCompletedObjectives } from "./objective-detector";
+import { createAnthropicProvider } from "./providers/anthropic";
 import { createCloudflareProvider } from "./providers/cloudflare";
+import { createOpenAIProvider } from "./providers/openai";
 import { scoreTranscript } from "./scoring";
-import type { ChatMessage, CompositionData, Provider, RuntimeConfig } from "./types";
+import type { ChatMessage, Provider, RuntimeConfig } from "./types";
 import { UI } from "./ui";
+import { DEFAULT_MODELS, readUserKey } from "./user-key";
 
 function readConfig(): RuntimeConfig | null {
   const tag = document.getElementById("edu-role-play-config");
@@ -16,10 +19,25 @@ function readConfig(): RuntimeConfig | null {
   }
 }
 
+function effectiveConfig(baked: RuntimeConfig): RuntimeConfig {
+  const user = readUserKey();
+  if (!user) return baked;
+  return {
+    provider: user.provider,
+    apiKey: user.apiKey,
+    accountId: user.accountId,
+    model: user.model ?? DEFAULT_MODELS[user.provider],
+  };
+}
+
 function createProvider(config: RuntimeConfig): Provider {
   switch (config.provider) {
     case "cloudflare":
       return createCloudflareProvider(config);
+    case "openai":
+      return createOpenAIProvider(config);
+    case "anthropic":
+      return createAnthropicProvider(config);
     default:
       throw new Error(`Unknown provider: ${(config as { provider: string }).provider}`);
   }
@@ -31,8 +49,8 @@ export async function mount(host?: HTMLElement): Promise<void> {
     console.error("[edu-role-play] no <edu-role-play> element found");
     return;
   }
-  const config = readConfig();
-  if (!config) {
+  const baked = readConfig();
+  if (!baked) {
     root.innerHTML =
       '<div style="font-family:system-ui;padding:16px;border:1px solid #f5c2c7;background:#f8d7da;border-radius:8px;color:#842029">' +
       "edu-role-play: missing &lt;script id=&quot;edu-role-play-config&quot;&gt;. Did you run <code>edu-role-play bundle</code>?" +
@@ -41,7 +59,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
   }
 
   const comp = readCompositionFromDom(root);
-  const provider = createProvider(config);
+  let provider = createProvider(effectiveConfig(baked));
   const history: ChatMessage[] = [];
   let turn = 0;
   let ended = false;
@@ -87,6 +105,9 @@ export async function mount(host?: HTMLElement): Promise<void> {
     },
     onEnd: async () => {
       await endSession();
+    },
+    onUserKeyChange: () => {
+      provider = createProvider(effectiveConfig(baked));
     },
   });
 

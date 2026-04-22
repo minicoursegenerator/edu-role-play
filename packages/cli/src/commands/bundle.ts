@@ -10,6 +10,7 @@ interface BundleOptions {
   apiKey?: string;
   accountId?: string;
   model?: string;
+  proxyUrl?: string;
   skipLint?: boolean;
 }
 
@@ -37,20 +38,39 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     console.error(`Unknown provider: ${provider}. Only 'cloudflare' is supported in v1.`);
     return 1;
   }
-  const apiKey = opts.apiKey ?? process.env.EDU_ROLE_PLAY_API_KEY ?? "";
-  const accountId = opts.accountId ?? process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
-  if (!apiKey) {
-    console.error("Missing --api-key (or EDU_ROLE_PLAY_API_KEY env var).");
-    return 1;
-  }
-  if (!accountId) {
-    console.error("Missing --account-id (or CLOUDFLARE_ACCOUNT_ID env var).");
-    return 1;
-  }
+  const proxyUrl = opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "";
   const model = opts.model ?? DEFAULT_MODEL;
 
+  let config: {
+    provider: string;
+    apiKey: string;
+    accountId: string;
+    model: string;
+    baseUrl?: string;
+  };
+
+  if (proxyUrl) {
+    // Proxy mode: the Worker holds the Cloudflare token and account ID.
+    // Bundle ships neither; runtime calls `${proxyUrl}/ai/run/<model>`.
+    config = { provider, apiKey: "", accountId: "", model, baseUrl: proxyUrl };
+    console.log(`Bundling with proxy: ${proxyUrl} (Cloudflare key not baked).`);
+  } else {
+    const apiKey = opts.apiKey ?? process.env.EDU_ROLE_PLAY_API_KEY ?? "";
+    const accountId = opts.accountId ?? process.env.CLOUDFLARE_ACCOUNT_ID ?? "";
+    if (!apiKey) {
+      console.error(
+        "Missing --api-key (or EDU_ROLE_PLAY_API_KEY env var). Alternatively, set EDU_ROLE_PLAY_PROXY_URL to use a Worker proxy.",
+      );
+      return 1;
+    }
+    if (!accountId) {
+      console.error("Missing --account-id (or CLOUDFLARE_ACCOUNT_ID env var).");
+      return 1;
+    }
+    config = { provider, apiKey, accountId, model };
+  }
+
   const runtimeJs = readFileSync(runtimeIifePath(), "utf8");
-  const config = { provider, apiKey, accountId, model };
   const configJson = JSON.stringify(config).replace(/</g, "\\u003c");
 
   const injection =
@@ -68,8 +88,10 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
   writeFileSync(outPath, output, "utf8");
   const hash = recordBundle(comp.id || file, path, outPath, output);
   console.log(`Bundled ${path} → ${outPath} (hash ${hash}).`);
-  console.log(
-    `Warning: the API key is embedded in source. Use a workspace-scoped key with tight rate limits.`,
-  );
+  if (!proxyUrl) {
+    console.log(
+      `Warning: the API key is embedded in source. Use a workspace-scoped key with tight rate limits, or set EDU_ROLE_PLAY_PROXY_URL to route through a Worker proxy.`,
+    );
+  }
   return 0;
 }

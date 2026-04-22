@@ -1,0 +1,11 @@
+name = "erp-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Cloudflare's built-in rate limiting binding. 30 requests per IP per 60s.
+# Adjust in the dashboard post-deploy if needed.
+[[unsafe.bindings]]
+name = "RL"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

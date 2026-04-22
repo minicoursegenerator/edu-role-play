@@ -38,6 +38,10 @@ program
   .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY)")
   .option("--account-id <id>", "Cloudflare account id (or set CLOUDFLARE_ACCOUNT_ID)")
   .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
+  .option(
+    "--proxy-url <url>",
+    "route Cloudflare calls through a Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL); --api-key and --account-id not needed when set",
+  )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
     process.exit(bundleCommand(file, opts));

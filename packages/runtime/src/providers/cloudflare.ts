@@ -1,23 +1,34 @@
-import type { ChatMessage, Provider, RuntimeConfig } from "../types";
+import type { Provider, RuntimeConfig } from "../types";
 
 export function createCloudflareProvider(config: RuntimeConfig): Provider {
-  if (!config.accountId) {
+  const { accountId, apiKey, model, baseUrl } = config;
+  // Proxy mode: the Worker holds the token + account id. Bundled config has
+  // empty apiKey and accountId; calls go to `${baseUrl}/ai/run/<model>` with
+  // no Authorization header (the Worker adds its own).
+  const proxyMode = !accountId && !apiKey && !!baseUrl;
+
+  if (!proxyMode && !accountId) {
     throw new Error(
-      "Cloudflare provider requires accountId. Re-bundle with --account-id.",
+      "Cloudflare provider requires accountId. Re-bundle with --account-id, or set EDU_ROLE_PLAY_PROXY_URL to use a Worker proxy.",
     );
   }
-  const { accountId, apiKey, model, baseUrl } = config;
+
   const origin = baseUrl ?? "https://api.cloudflare.com";
-  const url = `${origin}/client/v4/accounts/${accountId}/ai/run/${model}`;
+  const url = proxyMode
+    ? `${origin.replace(/\/+$/, "")}/ai/run/${model}`
+    : `${origin}/client/v4/accounts/${accountId}/ai/run/${model}`;
 
   return {
     async chat(messages, opts) {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (!proxyMode) {
+        headers.Authorization = `Bearer ${apiKey}`;
+      }
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           messages,
           temperature: opts?.temperature ?? 0.7,
@@ -25,7 +36,8 @@ export function createCloudflareProvider(config: RuntimeConfig): Provider {
         }),
       });
       if (!res.ok) {
-        throw new Error(`Cloudflare AI ${res.status}: ${await res.text()}`);
+        const body = await res.text();
+        throw new Error(`Cloudflare AI ${res.status}: ${redact(body, apiKey)}`);
       }
       const data = (await res.json()) as {
         result?: { response?: string };
@@ -44,4 +56,9 @@ export function createCloudflareProvider(config: RuntimeConfig): Provider {
       return text.trim();
     },
   };
+}
+
+function redact(s: string, key: string): string {
+  if (!key) return s;
+  return s.split(key).join("[redacted]");
 }

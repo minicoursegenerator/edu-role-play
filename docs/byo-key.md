@@ -1,19 +1,37 @@
-# Bring-your-own-key
+# Bring your own API key
 
-The bundled artifact calls the LLM provider directly from the learner's browser. The API key is baked into the artifact at `bundle` time.
+Every bundled role-play ships with the author's API key baked in — learners don't need to do anything to start practicing. If they'd rather use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits the author didn't plan for), the runtime supports that.
 
-## What that means
+## How a learner switches
 
-- **The key is visible in page source.** Anyone who opens the artifact can read it.
-- **Rotating the key = re-bundle + re-paste.** Everywhere the old artifact lives, it will stop working.
-- **Rate-limit the key.** Use a Cloudflare Workers AI token scoped to this workspace, with a tight daily rate limit. If the key leaks, caps limit the blast radius.
+1. In the footer of the role-play panel, click **Use my own key ▾**.
+2. Pick a provider:
+   - **Cloudflare** — needs an API token with `Workers AI → Read` and the Cloudflare account ID.
+   - **OpenAI** — needs a standard API key (`sk-…`).
+   - **Anthropic** — needs a standard API key (`sk-ant-…`).
+3. Paste the key. Optionally override the model (the placeholder shows the default for that provider).
+4. Click **Save**. The footer label changes to *"Using your own <provider> key · change"* and every subsequent turn (including end-of-session scoring) goes through the learner's key.
+5. To revert to the baked key, reopen the panel and press **Clear**.
 
-## Provider
+## Where the key lives
 
-v1 supports Cloudflare Workers AI. Default model: `@cf/meta/llama-3.1-8b-instruct`.
+- The key is written to `localStorage` under `edu-role-play:user-key:v1`.
+- It never leaves the browser except to call the provider the learner selected (`api.cloudflare.com` / `api.openai.com` / `api.anthropic.com`).
+- Neither Mini Course Generator nor the author of the role-play sees it.
+- Clearing browser storage for the site removes it. Incognito windows don't persist it.
 
-Pass `--api-key` and `--account-id` at bundle time (or set `EDU_ROLE_PLAY_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`). Override model with `--model @cf/<vendor>/<model>`.
+## Security caveats
 
-## MCG Freeform Card caveat
+- `localStorage` is readable by any script on the same origin. Only enter keys on role-plays from trusted authors.
+- Use a **rate-limited, workspace-scoped key** — not a root-account key.
+- The key is visible in DevTools. This is intrinsic to client-side inference.
 
-If the Freeform Card sanitizes `<script>` tags or blocks cross-origin `fetch` to Cloudflare, the bundled artifact will not execute. Verify early: paste a known-good bundle and open the card. If scripts are stripped, file a follow-up to add an iframe-embed fallback or an MCG-side allowlist before relying on this path in production.
+## Provider notes
+
+- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The baked default works because Mini Course Generator ships bundles through its deployed proxy. BYO OpenAI and Anthropic don't have this limitation.
+- **Anthropic** calls from a browser require the `anthropic-dangerous-direct-browser-access: true` header, which the runtime sets automatically. No CORS proxy needed.
+- **OpenAI** works out of the box; expects an organization-scoped key.
+
+## For authors
+
+Authors don't need to do anything to enable this — the BYO UI is always present in bundled role-plays. The bundle still bakes the author's Cloudflare key as the default; the BYO override is purely client-side.
