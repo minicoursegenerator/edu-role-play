@@ -202,8 +202,8 @@ textarea { font: inherit; color: inherit; }
 .sidebar {
   width: 320px; flex-shrink: 0; background: white;
   border-right: 1px solid oklch(92% 0.006 240);
-  display: flex; flex-direction: column; padding: 0 20px 20px; gap: 16px;
-  overflow: hidden;
+  display: flex; flex-direction: column; padding: 20px; gap: 16px;
+  overflow-y: auto; min-height: 0;
 }
 .sidebar h5 {
   font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
@@ -731,7 +731,6 @@ export class UI {
           <div class="name">${escapeHtml(whoName)}</div>
           <div class="sub">${escapeHtml(sub)}</div>
         </div>
-        <div class="chip-diff ${this.comp.difficulty}">${this.comp.difficulty}</div>
       </div>
       <div class="timer-box">${ICONS.timer}<span class="timer-value">${fmtTime(this.seconds)}</span></div>
       <div style="display:flex;gap:4px;align-items:center">
@@ -906,18 +905,6 @@ export class UI {
   private renderSidebar(side: HTMLElement): void {
     const p = this.comp.persona;
     side.innerHTML = `
-      <div>
-        <h5>Your counterpart</h5>
-        <div class="counterpart">
-          <div class="avatar" style="width:44px;height:44px;font-size:15px;background:${avatarColor(p.name || "?")}">${escapeHtml(initials(p.name || "?"))}</div>
-          <div>
-            <div class="who-name">${escapeHtml(p.name || "Practice partner")}</div>
-            <div class="who-sub">${escapeHtml(p.role || "")}</div>
-          </div>
-        </div>
-        <div class="diff-pill">${this.comp.difficulty} difficulty</div>
-      </div>
-
       <div>
         <h5>Scenario</h5>
         <div class="scenario-card">🎯 ${escapeHtml(this.comp.scenario || "Practice conversation")}</div>
