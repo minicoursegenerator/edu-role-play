@@ -47,6 +47,8 @@ export interface ContextBlock {
   body: string;
 }
 
+export type Difficulty = "easy" | "realistic" | "tough";
+
 export interface CompositionData {
   id: string;
   persona: PersonaData;
@@ -55,6 +57,7 @@ export interface CompositionData {
   objectives: ObjectiveData[];
   rubric: CriterionData[];
   termination: TerminationData;
+  difficulty: Difficulty;
 }
 
 export interface ChatMessage {

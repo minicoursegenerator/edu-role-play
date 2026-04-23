@@ -1,4 +1,11 @@
-import type { CompositionData } from "./types";
+import type { CompositionData, Difficulty } from "./types";
+
+const DIFFICULTIES: Difficulty[] = ["easy", "realistic", "tough"];
+
+function readDifficulty(root: Element): Difficulty {
+  const raw = (root.getAttribute("difficulty") ?? "").toLowerCase();
+  return (DIFFICULTIES as string[]).includes(raw) ? (raw as Difficulty) : "realistic";
+}
 
 function childText(el: Element, tag: string): string {
   const c = el.querySelector(tag);
@@ -48,5 +55,6 @@ export function readCompositionFromDom(root: Element): CompositionData {
       objectiveCheckEvery: num(termEl, "objective-check-every"),
       manualEnd: (termEl ? childText(termEl, "manual-end") : "false").toLowerCase() === "true",
     },
+    difficulty: readDifficulty(root),
   };
 }

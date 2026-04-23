@@ -10,3 +10,7 @@ build/
 coverage/
 .turbo/
 .cache/
+.agents/
+.claude/
+skills-lock.json
+compositions/*.bundled.html

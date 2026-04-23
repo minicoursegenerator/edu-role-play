@@ -1,4 +1,4 @@
-import { reinjectSystem } from "./chat";
+import { buildSystemPrompt, reinjectSystem } from "./chat";
 import { readCompositionFromDom } from "./composition-reader";
 import { detectCompletedObjectives } from "./objective-detector";
 import { createAnthropicProvider } from "./providers/anthropic";
@@ -60,7 +60,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
 
   const comp = readCompositionFromDom(root);
   let provider = createProvider(effectiveConfig(baked));
-  const history: ChatMessage[] = [];
+  let history: ChatMessage[] = [];
   let turn = 0;
   let ended = false;
   const turnCap = comp.termination.turnLimit ?? 20;
@@ -90,6 +90,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
 
       if (turn > 0 && turn % checkEvery === 0) {
         const completed = await detectCompletedObjectives(provider, comp, history);
+        ui.setObjectiveStatus(completed);
         const allMet = comp.objectives.every((o) => completed.has(o.id));
         if (allMet) {
           ui.addSystemNote(
@@ -105,6 +106,38 @@ export async function mount(host?: HTMLElement): Promise<void> {
     },
     onEnd: async () => {
       await endSession();
+    },
+    onHint: async () => {
+      try {
+        const sys = buildSystemPrompt(comp);
+        const recent = history
+          .slice(-6)
+          .map((m) => `${m.role === "user" ? "LEARNER" : "PERSONA"}: ${m.content}`)
+          .join("\n");
+        const prompt =
+          `You are a silent coach observing a role-play. Do not break character as the persona. ` +
+          `Given the role-play context and the recent exchange, suggest ONE concrete next line the LEARNER could say. ` +
+          `Reply with a single short sentence including an example phrase in quotes. No preamble.\n\n` +
+          `Role-play context:\n${sys}\n\nRecent exchange:\n${recent || "(none yet)"}`;
+        const reply = await provider.chat(
+          [
+            { role: "system", content: "You are a concise coaching assistant. Output one sentence only." },
+            { role: "user", content: prompt },
+          ],
+          { temperature: 0.4 },
+        );
+        return reply.trim();
+      } catch (err) {
+        ui.showError(`Hint failed: ${(err as Error).message}`);
+        return null;
+      }
+    },
+    onRestart: () => {
+      history = [];
+      turn = 0;
+      ended = false;
+      ui.setTurn(0, turnCap);
+      ui.resetLog();
     },
     onUserKeyChange: () => {
       provider = createProvider(effectiveConfig(baked));

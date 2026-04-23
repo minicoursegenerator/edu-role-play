@@ -1,6 +1,6 @@
 {
   "name": "@edu-role-play/runtime",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser runtime for edu-role-play (chat loop, scoring, UI). Built to an inlineable IIFE.",
   "license": "MIT",
   "type": "module",
