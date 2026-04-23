@@ -1,4 +1,4 @@
-import { buildSystemPrompt, reinjectSystem } from "./chat";
+import { reinjectSystem } from "./chat";
 import { readCompositionFromDom } from "./composition-reader";
 import { detectCompletedObjectives } from "./objective-detector";
 import { createAnthropicProvider } from "./providers/anthropic";
@@ -109,19 +109,45 @@ export async function mount(host?: HTMLElement): Promise<void> {
     },
     onHint: async () => {
       try {
-        const sys = buildSystemPrompt(comp);
+        const p = comp.persona;
+        const personaDesc = [
+          `Name: ${p.name}${p.role ? `, ${p.role}` : ""}`,
+          p.background ? `Background: ${p.background}` : "",
+          p.goals ? `Their goals: ${p.goals}` : "",
+          p.constraints ? `Their constraints: ${p.constraints}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n");
         const recent = history
           .slice(-6)
-          .map((m) => `${m.role === "user" ? "LEARNER" : "PERSONA"}: ${m.content}`)
+          .map(
+            (m) =>
+              `${m.role === "user" ? "LEARNER (the person you are coaching)" : `PERSONA (${p.name})`}: ${m.content}`,
+          )
           .join("\n");
+        const lastPersona = [...history].reverse().find((m) => m.role === "assistant");
+        const personaAskedQuestion = !!lastPersona && /\?\s*$|\?\s*["')\]]*\s*$/.test(lastPersona.content.trim());
+        const responseRule = personaAskedQuestion
+          ? `The persona's last message ends with a question. Your hint MUST be a direct answer to that question from the learner's point of view — not another question back, not a deflection. The learner can briefly add a follow-up, but the core must answer what was asked.`
+          : `No open question from the persona right now. Suggest a proactive line that advances the learner's objectives — this can include asking a good discovery question when appropriate.`;
         const prompt =
-          `You are a silent coach observing a role-play. Do not break character as the persona. ` +
-          `Given the role-play context and the recent exchange, suggest ONE concrete next line the LEARNER could say. ` +
-          `Reply with a single short sentence including an example phrase in quotes. No preamble.\n\n` +
-          `Role-play context:\n${sys}\n\nRecent exchange:\n${recent || "(none yet)"}`;
+          `You are a silent coach helping THE LEARNER (the human user) navigate a role-play conversation with a fictional PERSONA (played by an AI). ` +
+          `You are NOT the persona. Suggest ONE concrete next line THE LEARNER could say. ` +
+          `The suggestion must come from the learner's side — never a line the persona would say.\n\n` +
+          `${responseRule}\n\n` +
+          `Output format: a single short sentence of coaching that includes the exact words the learner should say, wrapped in double quotes. No preamble, no explanation after.\n` +
+          `Example when answering a question: Answer directly, e.g. "Yes — last quarter we measured it through X, Y, and Z."\n` +
+          `Example when proactive: Try asking about their current process, e.g. "Walk me through how your team handles X today."\n\n` +
+          `Scenario: ${comp.scenario}\n\n` +
+          `Persona the learner is talking to:\n${personaDesc}\n\n` +
+          `Recent exchange:\n${recent || "(none yet — the learner is about to open the conversation)"}`;
         const reply = await provider.chat(
           [
-            { role: "system", content: "You are a concise coaching assistant. Output one sentence only." },
+            {
+              role: "system",
+              content:
+                "You are a concise coaching assistant for the LEARNER. You always suggest what the learner should say next, never what the persona would say. Output one sentence only.",
+            },
             { role: "user", content: prompt },
           ],
           { temperature: 0.4 },

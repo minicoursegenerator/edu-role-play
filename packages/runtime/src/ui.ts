@@ -87,7 +87,7 @@ textarea { font: inherit; color: inherit; }
 .avatar.you { background: oklch(52% 0.20 255); }
 
 /* Chat log */
-.chat-area { flex: 1; overflow-y: auto; padding: 4px 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
+.chat-area { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
 .chat-inner {
   max-width: 680px; margin: 0 auto; padding: 0 16px 16px; width: 100%;
   display: flex; flex-direction: column; gap: 14px;
@@ -241,7 +241,7 @@ textarea { font: inherit; color: inherit; }
 .objective-item.done .check { background: oklch(52% 0.18 155); border-color: oklch(52% 0.18 155); color: white; }
 
 /* Chat column */
-.chat-col { flex: 1; display: flex; flex-direction: column; background: oklch(97.5% 0.006 240); min-width: 0; position: relative; }
+.chat-col { flex: 1; display: flex; flex-direction: column; background: oklch(97.5% 0.006 240); min-width: 0; min-height: 0; position: relative; }
 .mini-top {
   padding: 10px 16px; border-bottom: 1px solid oklch(92% 0.006 240);
   background: white; display: flex; gap: 8px; justify-content: flex-end; align-items: center;
@@ -498,12 +498,21 @@ export class UI {
     this.messages = [];
     this.objectivesDone.clear();
     this.ended = false;
+    this.busy = false;
     this.turn = 0;
     this.seconds = 0;
     this.stopTimer();
     window.speechSynthesis?.cancel();
+    this.debriefNode?.remove();
+    this.debriefNode = null;
+    const finish = this.root.querySelector(".finish-btn") as HTMLButtonElement | null;
+    if (finish) {
+      finish.disabled = false;
+      finish.innerHTML = "Finish";
+    }
     this.renderMessages();
     this.renderObjectives();
+    this.renderInput();
     this.updateTimerDisplay();
   }
 
@@ -929,11 +938,6 @@ export class UI {
           : ""
       }
 
-      <div>
-        <h5>Session</h5>
-        <div style="font-size:13px;color:oklch(38% 0.01 255);display:flex;gap:6px;align-items:center">${ICONS.timer}<span class="timer-value">${fmtTime(this.seconds)}</span></div>
-        <div style="font-size:12.5px;color:oklch(55% 0.01 255);margin-top:4px"><span class="msg-count">0 messages</span></div>
-      </div>
     `;
     this.renderObjectives();
   }
@@ -971,7 +975,12 @@ export class UI {
     `;
     const ta = bar.querySelector("textarea") as HTMLTextAreaElement;
     const sendBtn = bar.querySelector(".send-btn") as HTMLButtonElement;
-    const updateSend = () => sendBtn.classList.toggle("active", ta.value.trim().length > 0 && !this.busy && !this.ended);
+    const updateSend = () => {
+      const has = ta.value.trim().length > 0;
+      const enabled = has && !this.busy && !this.ended;
+      sendBtn.classList.toggle("active", enabled);
+      sendBtn.disabled = !enabled;
+    };
     ta.addEventListener("input", () => {
       ta.style.height = "auto";
       ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
@@ -1021,7 +1030,7 @@ export class UI {
         }
         const isUser = m.role === "user";
         const tip = m.tip
-          ? `<div class="tip-inline"><b>💡 Tip.</b> ${escapeHtml(m.tip)}</div>`
+          ? `<div class="tip-inline"><b>💡 Tip:</b> ${escapeHtml(m.tip)}</div>`
           : "";
         return `
           <div class="msg-row ${isUser ? "user" : "assistant"}">
