@@ -95,11 +95,11 @@ A role-play composition is a single HTML file with custom elements declaring the
 </edu-role-play>
 ```
 
-## Inference: BYO-key
+## Inference
 
-The bundled artifact calls the configured LLM provider directly from the browser using a key supplied at bundle time. No hosted proxy. Default provider: Cloudflare Workers AI (free tier). User-provided keys override for stronger models.
+Bundled role-plays call the Mini Course Generator Cloudflare Workers AI proxy by default — no API key shipped in the HTML, nothing for the author to configure. Power users can route through their own Worker with `--proxy-url`.
 
-Keys are baked into the artifact and visible in source. Use workspace-scoped keys with rate limits.
+Learners can optionally switch to their own Cloudflare, OpenAI, or Anthropic key at runtime via the footer — stored in `localStorage`, never in the HTML source. See [docs/byo-key.md](docs/byo-key.md).
 
 ## Status
 

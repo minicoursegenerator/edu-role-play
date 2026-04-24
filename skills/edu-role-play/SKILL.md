@@ -134,7 +134,7 @@ Each role-play gets its own folder so files don't pile up in the user's working 
    ```
    `start` bundles with the default Mini Course Generator proxy and opens the result in the user's browser.
 
-Only suggest `--api-key <…> --account-id <…>` if the user *explicitly* asks to bake in their own Cloudflare key. Only suggest `--proxy-url <…>` if the user *explicitly* asks to route through their own proxy.
+Only suggest `--proxy-url <…>` if the user *explicitly* asks to route through their own Cloudflare Worker proxy. There is no option to bake an API key into the HTML — keys never ship in source.
 
 ## 9. On-demand references
 

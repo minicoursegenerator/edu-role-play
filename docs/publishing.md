@@ -39,8 +39,7 @@ npm run build -w edu-role-play
 cd /tmp && rm -rf erp-smoke && mkdir erp-smoke && cd erp-smoke
 node <repo>/packages/cli/dist/index.js init demo --archetype skeptical-buyer
 node <repo>/packages/cli/dist/index.js lint demo.html
-EDU_ROLE_PLAY_API_KEY=test CLOUDFLARE_ACCOUNT_ID=test \
-  node <repo>/packages/cli/dist/index.js bundle demo.html
+node <repo>/packages/cli/dist/index.js bundle demo.html
 
 # publish in order (each runs prepublishOnly → clean + build)
 cd <repo>

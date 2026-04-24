@@ -1,6 +1,6 @@
 # Bring your own API key
 
-Every bundled role-play ships with the author's API key baked in — learners don't need to do anything to start practicing. If they'd rather use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits the author didn't plan for), the runtime supports that.
+Bundled role-plays ship with **no API key** in the HTML — they hit the Mini Course Generator Cloudflare Workers AI proxy by default, so learners can start practicing with zero setup. If a learner prefers to use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits), the runtime supports that.
 
 ## How a learner switches
 
@@ -28,10 +28,10 @@ Every bundled role-play ships with the author's API key baked in — learners do
 
 ## Provider notes
 
-- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The baked default works because Mini Course Generator ships bundles through its deployed proxy. BYO OpenAI and Anthropic don't have this limitation.
+- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The default path works because Mini Course Generator ships bundles through its deployed Worker proxy. BYO OpenAI and Anthropic don't have this limitation.
 - **Anthropic** calls from a browser require the `anthropic-dangerous-direct-browser-access: true` header, which the runtime sets automatically. No CORS proxy needed.
 - **OpenAI** works out of the box; expects an organization-scoped key.
 
 ## For authors
 
-Authors don't need to do anything to enable this — the BYO UI is always present in bundled role-plays. The bundle still bakes the author's Cloudflare key as the default; the BYO override is purely client-side.
+Authors don't need to do anything to enable this — the BYO UI is always present in bundled role-plays. Bundles route to the hosted Mini Course Generator proxy by default (no key in the HTML); the BYO override is purely client-side.

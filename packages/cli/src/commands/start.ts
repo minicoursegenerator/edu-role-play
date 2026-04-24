@@ -7,8 +7,6 @@ import { bundleCommand } from "./bundle.js";
 interface StartOptions {
   output?: string;
   provider?: string;
-  apiKey?: string;
-  accountId?: string;
   model?: string;
   proxyUrl?: string;
   skipLint?: boolean;

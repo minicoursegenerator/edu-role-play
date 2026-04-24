@@ -32,16 +32,14 @@ program
 
 program
   .command("bundle")
-  .description("Inline the runtime and API key into the composition, producing a self-contained HTML.")
+  .description("Inline the runtime into the composition, producing a self-contained HTML.")
   .argument("<file>", "path to the composition HTML file")
   .option("-o, --output <path>", "output path (default: <input>.bundled.html)")
   .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
-  .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY)")
-  .option("--account-id <id>", "Cloudflare account id (or set CLOUDFLARE_ACCOUNT_ID)")
   .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
   .option(
     "--proxy-url <url>",
-    "route Cloudflare calls through a Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL); --api-key and --account-id not needed when set",
+    "route Cloudflare calls through your own Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL); defaults to the Mini Course Generator proxy",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -54,12 +52,10 @@ program
   .argument("<file>", "path to the composition HTML or a pre-bundled .bundled.html file")
   .option("-o, --output <path>", "bundle output path (default: <input>.bundled.html)")
   .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
-  .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY); only when baking a direct key")
-  .option("--account-id <id>", "Cloudflare account id (or set CLOUDFLARE_ACCOUNT_ID); only when baking a direct key")
   .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
   .option(
     "--proxy-url <url>",
-    "route Cloudflare calls through a Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL)",
+    "route Cloudflare calls through your own Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL)",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
