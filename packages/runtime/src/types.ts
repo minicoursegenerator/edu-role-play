@@ -1,4 +1,8 @@
-export type ProviderId = "cloudflare" | "openai" | "anthropic";
+// "mcg" is the server-side gateway provider used by default bundles — the
+// backend holds all real provider keys. "cloudflare" | "openai" | "anthropic"
+// are only used when a learner brings their own key via the BYO-key UI.
+export type ProviderId = "mcg" | "cloudflare" | "openai" | "anthropic";
+export type UserProviderId = "cloudflare" | "openai" | "anthropic";
 
 export interface RuntimeConfig {
   provider: ProviderId;
@@ -6,10 +10,11 @@ export interface RuntimeConfig {
   accountId?: string;
   model: string;
   baseUrl?: string;
+  bundleId?: string;
 }
 
 export interface UserKeyConfig {
-  provider: ProviderId;
+  provider: UserProviderId;
   apiKey: string;
   accountId?: string;
   model?: string;

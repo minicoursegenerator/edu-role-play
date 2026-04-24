@@ -132,9 +132,9 @@ Each role-play gets its own folder so files don't pile up in the user's working 
    cd <slug>
    npx edu-role-play start <slug>.html
    ```
-   `start` bundles with the default Mini Course Generator proxy and opens the result in the user's browser.
+   `start` bundles against the default Mini Course Generator backend gateway and opens the result in the user's browser.
 
-Only suggest `--proxy-url <…>` if the user *explicitly* asks to route through their own Cloudflare Worker proxy. There is no option to bake an API key into the HTML — keys never ship in source.
+Only suggest `--gateway-url <…>` if the user *explicitly* asks to route through a different MCG backend (e.g. staging or self-hosted). There is no option to bake an API key into the HTML — keys never ship in source.
 
 ## 9. On-demand references
 
@@ -148,4 +148,4 @@ Load only when needed:
 
 ## Privacy note to surface to the user
 
-Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the Mini Course Generator Workers AI proxy by default (the proxy forwards to Cloudflare Workers AI). Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).
+Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the Mini Course Generator backend gateway by default (the backend forwards to the underlying LLM provider, currently Cloudflare Workers AI). Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).

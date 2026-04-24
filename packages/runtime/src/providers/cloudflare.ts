@@ -9,7 +9,7 @@ export function createCloudflareProvider(config: RuntimeConfig): Provider {
 
   if (!proxyMode && !accountId) {
     throw new Error(
-      "Cloudflare provider requires accountId. Re-bundle with --account-id, or set EDU_ROLE_PLAY_PROXY_URL to use a Worker proxy.",
+      "Cloudflare provider requires an account ID. Supply one via the BYO-key UI.",
     );
   }
 

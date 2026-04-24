@@ -6,8 +6,8 @@ The `edu-role-play` binary is non-interactive by design — agents invoke it on 
 
 - `edu-role-play init <name> [--archetype <id>]`
 - `edu-role-play lint <file>`
-- `edu-role-play bundle <file> [--proxy-url <url>]`
-- `edu-role-play start <file> [--proxy-url <url>]` — lint + bundle + open in the default browser (one step)
+- `edu-role-play bundle <file> [--gateway-url <url>]`
+- `edu-role-play start <file> [--gateway-url <url>]` — lint + bundle + open in the default browser (one step)
 - `edu-role-play preview <file> --api-key <k> --account-id <id>` — local dev server; key stays on your machine, never in the HTML
 
 ## Typical flow

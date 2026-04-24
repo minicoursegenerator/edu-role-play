@@ -6,17 +6,16 @@ import { recordBundle } from "../registry.js";
 
 interface BundleOptions {
   output?: string;
-  provider?: string;
   model?: string;
-  proxyUrl?: string;
+  gatewayUrl?: string;
   skipLint?: boolean;
 }
 
 const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
-// Mini Course Generator's hosted Workers AI proxy. Used by default so `edu-role-play bundle`
-// works out of the box with no API key required. Power users can override with
-// --proxy-url / EDU_ROLE_PLAY_PROXY_URL to route through their own Worker.
-const DEFAULT_PROXY_URL = "https://erp-proxy.eren-be8.workers.dev";
+// Mini Course Generator backend gateway. Bundled HTML posts to
+// `${GATEWAY_URL}/api/edu-role-play/chat`; the backend holds the provider key.
+// Override with --gateway-url / EDU_ROLE_PLAY_GATEWAY_URL (e.g. staging).
+const DEFAULT_GATEWAY_URL = "https://gateway.minicoursegenerator.com";
 
 export function bundleCommand(file: string, opts: BundleOptions): number {
   const path = resolve(process.cwd(), file);
@@ -35,22 +34,24 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     }
   }
 
-  const provider = opts.provider ?? "cloudflare";
-  if (provider !== "cloudflare") {
-    console.error(`Unknown provider: ${provider}. Only 'cloudflare' is supported in v1.`);
-    return 1;
-  }
   const model = opts.model ?? DEFAULT_MODEL;
-  const explicitProxy = opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "";
-  const proxyUrl = explicitProxy || DEFAULT_PROXY_URL;
+  const explicitGateway = opts.gatewayUrl ?? process.env.EDU_ROLE_PLAY_GATEWAY_URL ?? "";
+  const baseUrl = explicitGateway || DEFAULT_GATEWAY_URL;
 
-  const config = { provider, apiKey: "", accountId: "", model, baseUrl: proxyUrl };
+  const config = {
+    provider: "mcg" as const,
+    apiKey: "",
+    accountId: "",
+    model,
+    baseUrl,
+    bundleId: comp.id || undefined,
+  };
 
-  if (explicitProxy) {
-    console.log(`Bundling with proxy: ${proxyUrl}`);
+  if (explicitGateway) {
+    console.log(`Bundling with gateway: ${baseUrl}`);
   } else {
     console.log(
-      `Bundling with default Mini Course Generator proxy. Pass --proxy-url to use your own.`,
+      `Bundling with Mini Course Generator gateway. Pass --gateway-url to use a different backend.`,
     );
   }
 

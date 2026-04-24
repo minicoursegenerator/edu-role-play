@@ -19,7 +19,7 @@ pitching Acme CRM to a skeptical VP of Operations at a mid-market 3PL.
 
 The agent gathers the Pedagogical DNA (learner role, objectives, success criteria, rubric, persona), writes the composition, runs the linter, and hands you a bundled HTML.
 
-No API key required. Bundled role-plays call the Mini Course Generator Cloudflare Workers AI proxy by default. If you'd rather run your own Worker, see [byo-key.md](byo-key.md) and pass `--proxy-url` at bundle time.
+No API key required. Bundled role-plays call the Mini Course Generator backend gateway (`gateway.minicoursegenerator.com`) by default — the backend holds the provider key. Point bundles at a different backend with `--gateway-url`.
 
 ## 3. Paste into your course
 

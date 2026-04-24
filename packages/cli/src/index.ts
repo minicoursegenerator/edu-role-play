@@ -35,11 +35,10 @@ program
   .description("Inline the runtime into the composition, producing a self-contained HTML.")
   .argument("<file>", "path to the composition HTML file")
   .option("-o, --output <path>", "output path (default: <input>.bundled.html)")
-  .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
   .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
   .option(
-    "--proxy-url <url>",
-    "route Cloudflare calls through your own Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL); defaults to the Mini Course Generator proxy",
+    "--gateway-url <url>",
+    "MCG backend gateway URL (or set EDU_ROLE_PLAY_GATEWAY_URL); defaults to gateway.minicoursegenerator.com",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -51,11 +50,10 @@ program
   .description("Bundle a composition (if needed) and open it in the default browser.")
   .argument("<file>", "path to the composition HTML or a pre-bundled .bundled.html file")
   .option("-o, --output <path>", "bundle output path (default: <input>.bundled.html)")
-  .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
   .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
   .option(
-    "--proxy-url <url>",
-    "route Cloudflare calls through your own Worker proxy (or set EDU_ROLE_PLAY_PROXY_URL)",
+    "--gateway-url <url>",
+    "MCG backend gateway URL (or set EDU_ROLE_PLAY_GATEWAY_URL)",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {

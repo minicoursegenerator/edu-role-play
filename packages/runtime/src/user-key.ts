@@ -1,7 +1,7 @@
-import type { ProviderId, UserKeyConfig } from "./types";
+import type { UserKeyConfig, UserProviderId } from "./types";
 
 const STORAGE_KEY = "edu-role-play:user-key:v1";
-const VALID_PROVIDERS: ProviderId[] = ["cloudflare", "openai", "anthropic"];
+const VALID_PROVIDERS: UserProviderId[] = ["cloudflare", "openai", "anthropic"];
 
 export function readUserKey(): UserKeyConfig | null {
   try {
@@ -18,7 +18,7 @@ export function readUserKey(): UserKeyConfig | null {
       return null;
     }
     return {
-      provider: parsed.provider as ProviderId,
+      provider: parsed.provider as UserProviderId,
       apiKey: parsed.apiKey,
       accountId: typeof parsed.accountId === "string" ? parsed.accountId : undefined,
       model: typeof parsed.model === "string" && parsed.model ? parsed.model : undefined,
@@ -45,7 +45,7 @@ export function clearUserKey(): void {
   }
 }
 
-export const DEFAULT_MODELS: Record<ProviderId, string> = {
+export const DEFAULT_MODELS: Record<UserProviderId, string> = {
   cloudflare: "@cf/meta/llama-3.1-8b-instruct",
   openai: "gpt-4o-mini",
   anthropic: "claude-haiku-4-5-20251001",

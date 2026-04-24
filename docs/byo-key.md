@@ -28,7 +28,7 @@ Bundled role-plays ship with **no API key** in the HTML — they hit the Mini Co
 
 ## Provider notes
 
-- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The default path works because Mini Course Generator ships bundles through its deployed Worker proxy. BYO OpenAI and Anthropic don't have this limitation.
+- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The default path works because Mini Course Generator ships bundles through its backend gateway, which holds the key server-side. BYO OpenAI and Anthropic don't have this limitation.
 - **Anthropic** calls from a browser require the `anthropic-dangerous-direct-browser-access: true` header, which the runtime sets automatically. No CORS proxy needed.
 - **OpenAI** works out of the box; expects an organization-scoped key.
 

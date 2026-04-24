@@ -10,16 +10,16 @@ Scaffolds `<name>.html` from an archetype (e.g. `skeptical-buyer`) or the blank 
 
 Validates the composition. Exits 0 on success, 1 on any error. Warnings do not fail.
 
-## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--proxy-url <url>] [--skip-lint]`
+## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--gateway-url <url>] [--skip-lint]`
 
 Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.bundled.html`. Default model: `@cf/meta/llama-3.1-8b-instruct`.
 
-**No API key is ever baked into the HTML.** The bundle routes inference through a Cloudflare Workers AI proxy — the hosted Mini Course Generator one by default. Learners can optionally switch to their own key at runtime via the BYO-key UI (stored in browser localStorage, not in the HTML).
+**No API key is ever baked into the HTML.** The bundle calls `POST {gateway}/api/edu-role-play/chat` on the Mini Course Generator backend; the backend holds the provider key and applies rate limits. Learners can optionally switch to their own key at runtime via the BYO-key UI (stored in browser localStorage, not in the HTML).
 
 Overrides:
-- `--proxy-url <url>` (or `EDU_ROLE_PLAY_PROXY_URL`): route through your own Worker proxy instead of the MCG default.
+- `--gateway-url <url>` (or `EDU_ROLE_PLAY_GATEWAY_URL`): point bundles at a different backend (e.g. staging, self-hosted).
 
-## `edu-role-play start <file> [--proxy-url <url>]`
+## `edu-role-play start <file> [--gateway-url <url>]`
 
 Bundles the composition (using the same defaults as `bundle`) and opens the resulting `.bundled.html` in the user's default browser. This is the one-shot "try the role-play" command to hand the user.
 

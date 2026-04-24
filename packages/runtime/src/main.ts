@@ -3,6 +3,7 @@ import { readCompositionFromDom } from "./composition-reader";
 import { detectCompletedObjectives } from "./objective-detector";
 import { createAnthropicProvider } from "./providers/anthropic";
 import { createCloudflareProvider } from "./providers/cloudflare";
+import { createMcgProvider } from "./providers/mcg";
 import { createOpenAIProvider } from "./providers/openai";
 import { scoreTranscript } from "./scoring";
 import type { ChatMessage, Provider, RuntimeConfig } from "./types";
@@ -27,11 +28,14 @@ function effectiveConfig(baked: RuntimeConfig): RuntimeConfig {
     apiKey: user.apiKey,
     accountId: user.accountId,
     model: user.model ?? DEFAULT_MODELS[user.provider],
+    bundleId: baked.bundleId,
   };
 }
 
 function createProvider(config: RuntimeConfig): Provider {
   switch (config.provider) {
+    case "mcg":
+      return createMcgProvider(config);
     case "cloudflare":
       return createCloudflareProvider(config);
     case "openai":
