@@ -105,6 +105,10 @@ Keys are baked into the artifact and visible in source. Use workspace-scoped key
 
 Early development. See [docs/](docs/) for current capabilities.
 
+## Maintainers
+
+Release checklist (lockstep-version the 3 npm packages): [docs/publishing.md](docs/publishing.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

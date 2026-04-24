@@ -17,4 +17,4 @@ Mirrors the [HyperFrames](https://github.com/heygen-com/hyperframes) packaging: 
 
 ## Status
 
-Phase 0 — composition format, runtime, and CLI in progress.
+Published on npm: `@edu-role-play/core`, `@edu-role-play/runtime`, `edu-role-play` (CLI). Skill installable via `npx skills add minicoursegenerator/edu-role-play`.
