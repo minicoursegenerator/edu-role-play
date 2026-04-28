@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import { parseComposition, lint, hasErrors } from "@edu-role-play/core";
 import { portraitsDir, runtimeIifePath } from "../paths.js";
 import { recordBundle } from "../registry.js";
@@ -117,5 +117,11 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
   writeFileSync(outPath, bundled.output, "utf8");
   const hash = recordBundle(bundled.id, bundled.path, outPath, bundled.output);
   console.log(`Bundled ${bundled.path} → ${outPath} (hash ${hash}).`);
+  const rel = relative(process.cwd(), outPath) || outPath;
+  console.log("");
+  console.log("Open in your browser:");
+  console.log(`  open ${rel}`);
+  console.log("Or let the CLI open it for you:");
+  console.log(`  npx edu-role-play start ${rel}`);
   return 0;
 }
