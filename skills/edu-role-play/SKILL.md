@@ -157,13 +157,19 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 2. Write the composition to `<slug>/<slug>.html`.
 3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.html`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
 4. **Do not bundle yourself.** Do not ask the user for an API key.
-5. Tell the user, as the final message, these lines verbatim (substituting the slug):
+5. Your final message MUST include all three sections below, in this order, every time. Do not omit any of them, even if the conversation is brief.
+
+   **a. Run command** — these lines verbatim (substituting the slug):
    ```
    cd <slug>
    npx edu-role-play start <slug>.html
    ```
-   Then add this note verbatim, on its own paragraph:
-   > This uses a **shared public proxy** for quick testing — it's rate-limited and meant only for trying things out. **Before you share this role-play with learners**, run `npx edu-role-play deploy-proxy` to deploy your own Cloudflare Worker, optionally add your own `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as a secret on it for stronger model quality, then re-bundle with `--proxy-url https://<your-worker>.workers.dev` (or set `EDU_ROLE_PLAY_PROXY_URL`).
+
+   **b. Tweak invitation** — invite the user to iterate with you, e.g.:
+   > Try it out and tell me what to change — persona traits, objectives, opening behavior, rubric weights, scenario details. We can keep tweaking together until it feels right.
+
+   **c. Deploy-before-sharing note** — verbatim, on its own paragraph:
+   > This bundle uses a **shared public proxy** for quick testing — it's rate-limited and only meant for iteration. **Before you share this role-play with teammates or learners**, run `npx edu-role-play deploy-proxy` to deploy your own Cloudflare Worker, then add your own `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as a secret on it for stronger model quality, and re-bundle with `--proxy-url https://<your-worker>.workers.dev` (or set `EDU_ROLE_PLAY_PROXY_URL`). Keys never ship inside the HTML.
 
 Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker, or when they're moving from testing to sharing with learners. There is no option to bake an API key into the HTML — keys never ship in source.
 
