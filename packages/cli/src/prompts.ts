@@ -23,25 +23,69 @@ export function ask(question: string, defaultValue?: string): Promise<string> {
   );
 }
 
+const CTRL_C = String.fromCharCode(3);
+const BACKSPACE = String.fromCharCode(127);
+const BACKSPACE_ALT = String.fromCharCode(8);
+
 export function askSecret(question: string): Promise<string> {
-  // Suppress echo by muting stdout while the user types.
-  return withRl(
-    (rl) =>
-      new Promise((resolve) => {
-        const rlAny = rl as unknown as { _writeToOutput?: (s: string) => void };
-        const origWrite = rlAny._writeToOutput;
-        rlAny._writeToOutput = (s: string) => {
-          // Allow the prompt itself through, mute the rest.
-          if (s.startsWith(question)) origWrite?.call(rl, s);
-          else origWrite?.call(rl, "");
-        };
-        rl.question(`${question} `, (answer) => {
-          rlAny._writeToOutput = origWrite;
+  // Read with the TTY in raw mode so the terminal itself does no echoing,
+  // then write `*` per keystroke. Falls back to plain readline for non-TTY
+  // (piped) input. The previous _writeToOutput hack suppressed Node's echo
+  // but not the terminal's, so secrets like API keys still leaked.
+  return new Promise((resolve, reject) => {
+    const tty = stdin as NodeJS.ReadStream & { isRaw?: boolean };
+    if (!tty.isTTY || typeof tty.setRawMode !== "function") {
+      withRl(
+        (rl) =>
+          new Promise<void>((done) => {
+            rl.question(`${question} `, (answer) => {
+              resolve(answer.trim());
+              done();
+            });
+          }),
+      ).catch(reject);
+      return;
+    }
+    stdout.write(`${question} `);
+    const prevRaw = tty.isRaw === true;
+    tty.setRawMode(true);
+    tty.resume();
+    tty.setEncoding("utf8");
+    let buf = "";
+    const cleanup = (): void => {
+      tty.off("data", onData);
+      tty.setRawMode(prevRaw);
+      tty.pause();
+    };
+    const onData = (chunk: string): void => {
+      for (const ch of chunk) {
+        if (ch === "\r" || ch === "\n") {
+          cleanup();
           stdout.write("\n");
-          resolve(answer.trim());
-        });
-      }),
-  );
+          resolve(buf.trim());
+          return;
+        }
+        if (ch === CTRL_C) {
+          cleanup();
+          stdout.write("\n");
+          reject(new Error("aborted"));
+          return;
+        }
+        if (ch === BACKSPACE || ch === BACKSPACE_ALT) {
+          if (buf.length > 0) {
+            buf = buf.slice(0, -1);
+            stdout.write("\b \b");
+          }
+          continue;
+        }
+        // Skip other control bytes silently.
+        if (ch.charCodeAt(0) < 32) continue;
+        buf += ch;
+        stdout.write("*");
+      }
+    };
+    tty.on("data", onData);
+  });
 }
 
 export interface SelectOption<V extends string> {

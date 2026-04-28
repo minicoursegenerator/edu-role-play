@@ -101,7 +101,10 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   console.log("");
   console.log("✔ Done.");
   console.log(`  Saved to ~/.edu-role-play/config.json`);
-  console.log(`  Now: edu-role-play bundle <your-roleplay>.html`);
+  console.log(`  Re-bundle so the HTML calls your Worker:`);
+  console.log(`    npx edu-role-play bundle <your-roleplay>.html`);
+  console.log(`  Or open it directly with:`);
+  console.log(`    npx edu-role-play start <your-roleplay>.html`);
   console.log("");
   return 0;
 }
