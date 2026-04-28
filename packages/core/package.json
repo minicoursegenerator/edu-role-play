@@ -1,6 +1,6 @@
 {
   "name": "@edu-role-play/core",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Composition parser, linter rules, and types for edu-role-play.",
   "license": "MIT",
   "type": "module",

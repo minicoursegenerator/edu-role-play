@@ -35,8 +35,8 @@
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
-    "@edu-role-play/core": "0.1.12",
-    "@edu-role-play/runtime": "0.1.12",
+    "@edu-role-play/core": "0.1.13",
+    "@edu-role-play/runtime": "0.1.13",
     "commander": "^12.1.0",
     "fflate": "^0.8.2"
   },

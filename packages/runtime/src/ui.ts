@@ -544,6 +544,7 @@ export class UI {
 
   disableInput(reason?: string): void {
     this.ended = true;
+    this.stopTimer();
     if (reason) this.addSystemNote(reason);
     this.renderInput();
   }
