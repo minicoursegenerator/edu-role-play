@@ -7,7 +7,7 @@ import { bundleCommand } from "./bundle.js";
 interface StartOptions {
   output?: string;
   model?: string;
-  gatewayUrl?: string;
+  proxyUrl?: string;
   skipLint?: boolean;
 }
 

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>example-support-deescalation</title>
+    <style>
+      edu-role-play > :not([data-erp-fallback]) { display: none; }
+      [data-erp-fallback].notice { display: block; font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; line-height: 1.5; }
+      [data-erp-fallback] h2 { margin: 0 0 8px 0; font-size: 18px; }
+      [data-erp-fallback] pre { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <edu-role-play id="example-support-deescalation" runtime-version="0.1.0">
+      <div class="notice" data-erp-fallback>
+        <h2>This role-play isn't bundled yet</h2>
+        <p>Open a terminal in this folder and run:</p>
+        <pre><code>npx edu-role-play bundle example-support-deescalation.html</code></pre>
+      </div>
+
+      <edu-persona name="Marcus Reid" role="Mini Course Generator customer (Pro plan)" avatar="middle-aged-man-frustrated">
+        <background>Course creator on the Pro plan for over a year. Just published a new course and shared it with his audience. Multiple learners messaged him saying the course doesn't scroll on their phones — they're stuck on the first screen. He tested it himself on iOS Safari and Android Chrome and confirmed the page is frozen. He's losing sign-ups by the hour.</background>
+        <goals>Get the mobile scroll bug fixed today, or get a workaround he can send to his learners. Hear that someone owns this. Decide whether Mini Course Generator is reliable enough to keep building on.</goals>
+        <constraints>Will not accept "we'll look into it" with no owner or timeframe. Will not be told to clear cache or try a different browser — he's already done the basics. Will threaten to cancel and move to a competitor if he feels brushed off in the first two turns.</constraints>
+        <speech-patterns>Starts hot — vents in the opening message about lost sign-ups and looking unprofessional in front of his audience. Uses "you guys" and "this is unacceptable". Calms quickly when he hears specifics, ownership, and a real timeline. Gets sharper again if he gets scripted-sounding lines or generic apologies.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are a senior support specialist at Mini Course Generator. Marcus Reid just opened a chat because his published course doesn't scroll on mobile — learners are stuck on the first screen and he's losing sign-ups in real time. You have about 10 minutes to acknowledge the impact, take ownership, agree on a concrete next step (fix or workaround), and keep him on the platform.
+      </edu-scenario>
+
+      <edu-objective id="acknowledge-impact">Acknowledge the specific impact on Marcus — broken mobile course, lost sign-ups, audience watching — before offering any fix.</edu-objective>
+      <edu-objective id="take-ownership">Take personal ownership of the issue rather than deflecting to "the engineering team" or "the platform".</edu-objective>
+      <edu-objective id="commit-next-step">Commit to a concrete next step with a name, channel, and timeframe (e.g. "I'll personally update you by 5pm via email").</edu-objective>
+      <edu-objective id="retain-customer">Get Marcus to verbally agree to stay on Mini Course Generator while the fix is in motion.</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="acknowledge-impact" weight="3">Full credit (3): names the mobile-scroll breakage and the lost-sign-ups impact in your own words before pivoting to solutions.</criterion>
+        <criterion objective="take-ownership" weight="3">Full credit (3): uses "I" language and owns the resolution path; no blame on other teams or systems.</criterion>
+        <criterion objective="commit-next-step" weight="3">Full credit (3): commitment includes who, how (channel), and by when.</criterion>
+        <criterion objective="retain-customer" weight="3">Full credit (3): Marcus explicitly says he'll stay / give it another shot.</criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>16</turn-limit>
+        <objective-check-every>3</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>

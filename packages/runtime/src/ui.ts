@@ -3,6 +3,7 @@ import type {
   CompositionData,
   Difficulty,
   ProviderId,
+  ResultSnapshot,
   ScoreResult,
   UserKeyConfig,
 } from "./types";
@@ -285,6 +286,66 @@ textarea { font: inherit; color: inherit; }
   border-radius: 12px; font-size: 14px; font-weight: 600;
 }
 
+/* Briefing modal (single column, sectioned with dividers) */
+.modal-card.brief-card { max-width: 640px; padding: 28px 28px 24px; }
+.brief-head { margin-bottom: 20px; }
+.brief-head .modal-eyebrow { margin-bottom: 6px; }
+.brief-head .modal-title { font-size: 26px; }
+.brief-divider {
+  height: 1px; background: oklch(92% 0.006 240); margin: 0 -28px;
+}
+.brief-persona-row {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 0;
+}
+.brief-avatar {
+  width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+  flex-shrink: 0;
+  background: oklch(97% 0.006 240);
+}
+.brief-avatar-initials {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 600; font-size: 26px;
+}
+.brief-persona-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.brief-persona-name { font-size: 18px; font-weight: 700; color: oklch(20% 0.012 255); }
+.brief-persona-role { font-size: 14px; color: oklch(50% 0.01 255); line-height: 1.4; }
+.brief-scenario-block { padding: 18px 0 20px; }
+.brief-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: oklch(55% 0.01 255); margin-bottom: 12px;
+}
+.scenario-hero-card {
+  padding: 18px 22px;
+  background: oklch(96% 0.012 240);
+  border-left: 4px solid oklch(52% 0.20 255);
+  border-radius: 10px;
+  font-size: 14.5px; line-height: 1.8;
+  color: oklch(22% 0.012 255);
+  font-weight: 400;
+}
+.scenario-hero-card p { margin: 0 0 12px 0; }
+.scenario-hero-card p:last-child { margin-bottom: 0; }
+.brief-objectives-block { padding: 18px 0; }
+.brief-obj-row {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px; color: oklch(22% 0.012 255); line-height: 1.5;
+}
+.brief-obj-row b { font-weight: 700; }
+.brief-obj-icon { display: inline-flex; align-items: center; flex-shrink: 0; }
+.brief-obj-list {
+  margin: 10px 0 0 30px; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  font-size: 14px; color: oklch(22% 0.012 255); line-height: 1.55;
+}
+.brief-obj-list li { padding-left: 0; }
+.modal-card.brief-card .close-btn { margin-top: 18px; padding: 14px 0; font-size: 15px; }
+.brief-footer {
+  margin-top: 12px; text-align: center;
+  font-size: 12.5px; color: oklch(58% 0.01 255);
+}
+
 /* BYO panel */
 .byo-wrap { position: relative; }
 .byo-panel {
@@ -341,6 +402,7 @@ export interface UIHandlers {
   onHint: () => Promise<string | null> | string | null;
   onRestart: () => Promise<void> | void;
   onUserKeyChange: () => void;
+  onDownloadResults: () => ResultSnapshot | null;
 }
 
 interface MsgRecord {
@@ -382,6 +444,21 @@ function initials(name: string): string {
 function fmtTime(s: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
+function formatScenarioBody(raw: string): string {
+  const text = (raw || "Practice conversation").trim();
+  const sentences = text
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (sentences.length <= 1) {
+    return `<p>🎯 ${escapeHtml(text)}</p>`;
+  }
+  const [first, ...rest] = sentences;
+  const firstHtml = `<p>🎯 ${escapeHtml(first)}</p>`;
+  const restHtml = rest.map((s) => `<p>${escapeHtml(s)}</p>`).join("");
+  return firstHtml + restHtml;
+}
+
 function parseTip(raw: string): { text: string; tip: string | null } {
   const m = raw.match(/\[TIP:\s*([\s\S]+?)\]/);
   const tip = m ? m[1].trim() : null;
@@ -399,6 +476,7 @@ export class UI {
   private objectivesDone = new Set<string>();
   private busy = false;
   private ended = false;
+  private resultsReady = false;
   private turn = 0;
   private turnCap?: number;
 
@@ -462,6 +540,32 @@ export class UI {
     this.renderInput();
   }
 
+  showRestartAction(): void {
+    this.ended = true;
+    this.messages = this.messages.map((m) =>
+      m.role === "system-note" && m.content === "Scoring the conversation…"
+        ? { ...m, content: "Conversation scored." }
+        : m,
+    );
+    this.renderMessages();
+    const finish = this.root.querySelector(".finish-btn") as HTMLButtonElement | null;
+    if (finish) {
+      finish.disabled = false;
+      finish.innerHTML = "Restart";
+      finish.title = "Restart";
+    }
+    this.renderInput();
+  }
+
+  setResultsReady(ready: boolean): void {
+    this.resultsReady = ready;
+    this.renderInput();
+  }
+
+  getDurationSeconds(): number {
+    return this.seconds;
+  }
+
   appendMessage(msg: ChatMessage): void {
     if (msg.role === "system") return;
     if (msg.role === "assistant") {
@@ -498,6 +602,7 @@ export class UI {
     this.messages = [];
     this.objectivesDone.clear();
     this.ended = false;
+    this.resultsReady = false;
     this.busy = false;
     this.turn = 0;
     this.seconds = 0;
@@ -509,11 +614,75 @@ export class UI {
     if (finish) {
       finish.disabled = false;
       finish.innerHTML = "Finish";
+      finish.title = "Finish & debrief";
     }
     this.renderMessages();
     this.renderObjectives();
     this.renderInput();
     this.updateTimerDisplay();
+  }
+
+  showBriefing(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const p = this.comp.persona;
+      const avatarHtml = p.avatar
+        ? `<img src="${escapeHtml(p.avatar)}" alt="${escapeHtml(p.name || "Practice partner")}" style="width:100%;height:100%;object-fit:cover;display:block" />`
+        : `<div class="brief-avatar-initials" style="background:${avatarColor(p.name || "?")}">${escapeHtml(initials(p.name || "?"))}</div>`;
+      const turnLimit = this.comp.termination.turnLimit ?? 20;
+      const minutes = Math.max(5, Math.round(turnLimit / 2));
+      const footerLine = `~${minutes} min session · ${escapeHtml(this.comp.difficulty)} difficulty`;
+      const targetIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(52% 0.20 255)" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="oklch(52% 0.20 255)"/></svg>`;
+      const objectivesBlockHtml = this.comp.objectives.length === 0
+        ? ""
+        : this.comp.objectives.length === 1
+          ? `<div class="brief-obj-row">
+               <span class="brief-obj-icon">${targetIcon}</span>
+               <span><b>Your objective:</b> ${escapeHtml(this.comp.objectives[0].text || this.comp.objectives[0].id)}</span>
+             </div>`
+          : `<div class="brief-obj-row">
+               <span class="brief-obj-icon">${targetIcon}</span>
+               <span><b>Your objectives</b></span>
+             </div>
+             <ul class="brief-obj-list">${this.comp.objectives
+               .map((o) => `<li>${escapeHtml(o.text || o.id)}</li>`)
+               .join("")}</ul>`;
+      const backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop";
+      backdrop.innerHTML = `
+        <div class="modal-card brief-card">
+          <div class="brief-head">
+            <div class="modal-eyebrow">Role-play briefing</div>
+          </div>
+          <div class="brief-persona-row">
+            <div class="brief-avatar">${avatarHtml}</div>
+            <div class="brief-persona-text">
+              ${p.name ? `<div class="brief-persona-name">${escapeHtml(p.name)}</div>` : ""}
+              ${p.role ? `<div class="brief-persona-role">${escapeHtml(p.role)}</div>` : ""}
+            </div>
+          </div>
+          <div class="brief-divider"></div>
+          <div class="brief-scenario-block">
+            <div class="brief-label">Scenario</div>
+            <div class="scenario-hero-card">${formatScenarioBody(this.comp.scenario)}</div>
+          </div>
+          ${
+            objectivesBlockHtml
+              ? `<div class="brief-divider"></div><div class="brief-objectives-block">${objectivesBlockHtml}</div>`
+              : ""
+          }
+          <button class="close-btn brief-ok-btn">Start role-play</button>
+          <div class="brief-footer">${footerLine}</div>
+        </div>
+      `;
+      const ok = () => {
+        backdrop.remove();
+        resolve();
+      };
+      backdrop.querySelector(".brief-ok-btn")!.addEventListener("click", ok);
+      this.root.appendChild(backdrop);
+      const btn = backdrop.querySelector(".brief-ok-btn") as HTMLButtonElement | null;
+      btn?.focus();
+    });
   }
 
   showResults(result: ScoreResult): void {
@@ -552,7 +721,10 @@ export class UI {
         <button class="close-btn">Close & Continue</button>
       </div>
     `;
-    const close = () => backdrop.remove();
+    const close = () => {
+      this.showRestartAction();
+      backdrop.remove();
+    };
     backdrop.querySelector(".modal-close")!.addEventListener("click", close);
     backdrop.querySelector(".close-btn")!.addEventListener("click", close);
     backdrop.addEventListener("click", (e) => {
@@ -560,12 +732,13 @@ export class UI {
     });
     this.debriefNode = backdrop;
     this.root.appendChild(backdrop);
+    this.showRestartAction();
   }
 
   // ─── Internal helpers ────────────────────────────────────────────
   private objectiveLabel(id: string): string {
     const o = this.comp.objectives.find((x) => x.id === id);
-    return o?.text ? `${id} — ${o.text}` : id;
+    return o?.text || humanizeId(id);
   }
 
   private startTimer(): void {
@@ -683,31 +856,18 @@ export class UI {
     setTimeout(close, 8000);
   }
 
-  private exportTranscript(): void {
-    const lines = [
-      `edu-role-play transcript`,
-      `Persona: ${this.comp.persona.name}${this.comp.persona.role ? ` (${this.comp.persona.role})` : ""}`,
-      `Scenario: ${this.comp.scenario}`,
-      `Duration: ${fmtTime(this.seconds)}`,
-      `Date: ${new Date().toLocaleString()}`,
-      "",
-      "---",
-      "",
-    ];
-    this.messages
-      .filter((m) => m.role !== "system-note")
-      .forEach((m) => {
-        lines.push(`[${m.role === "user" ? "YOU" : this.comp.persona.name.toUpperCase() || "PERSONA"}]`);
-        lines.push(m.content);
-        if (m.tip) lines.push(`[TIP: ${m.tip}]`);
-        lines.push("");
-      });
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  private downloadResults(): void {
+    const snapshot = this.handlers.onDownloadResults();
+    if (!snapshot) return;
+    const blob = new Blob([JSON.stringify(snapshot, null, 2) + "\n"], {
+      type: "application/json",
+    });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     const slug = (this.comp.id || "roleplay").toLowerCase().replace(/\s+/g, "-");
-    a.download = `${slug}-transcript.txt`;
+    a.download = `${slug}-results.json`;
     a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   private handleSend(): void {
@@ -747,11 +907,11 @@ export class UI {
           this.ttsEnabled ? ICONS.vol : ICONS.volOff
         }</button>
         <button class="tbtn restart-btn" title="Restart">${ICONS.restart}</button>
-        <button class="tbtn export-btn" title="Export transcript">${ICONS.exp}</button>
+        <button class="tbtn export-btn" title="Download results" disabled>${ICONS.exp}</button>
         <div class="byo-wrap">
           <button class="tbtn byo-btn" title="Use my own API key">${ICONS.key}</button>
         </div>
-        <button class="finish-btn" title="Finish & debrief">Finish</button>
+        <button class="finish-btn" title="${this.ended ? "Restart" : "Finish & debrief"}">${this.ended ? "Restart" : "Finish"}</button>
       </div>
     `;
     this.wireToolbar(bar);
@@ -770,9 +930,13 @@ export class UI {
     bar.querySelector(".restart-btn")!.addEventListener("click", () => {
       void this.handlers.onRestart();
     });
-    bar.querySelector(".export-btn")!.addEventListener("click", () => this.exportTranscript());
+    bar.querySelector(".export-btn")!.addEventListener("click", () => this.downloadResults());
     const finish = bar.querySelector(".finish-btn") as HTMLButtonElement;
     finish.addEventListener("click", () => {
+      if (this.ended) {
+        void this.handlers.onRestart();
+        return;
+      }
       if (this.messages.filter((m) => m.role !== "system-note").length < 2) return;
       finish.disabled = true;
       finish.innerHTML = `<span class="spinner white"></span> Scoring…`;
@@ -1004,6 +1168,7 @@ export class UI {
     const sendBtn = this.root.querySelector(".send-btn") as HTMLButtonElement | null;
     const mic = this.root.querySelector(".mic-btn") as HTMLButtonElement | null;
     const hintBtn = this.root.querySelector(".hint-btn") as HTMLButtonElement | null;
+    const exportBtn = this.root.querySelector(".export-btn") as HTMLButtonElement | null;
     if (ta) {
       ta.disabled = this.busy || this.ended;
       ta.placeholder = this.listening ? "Listening…" : this.ended ? "Session ended" : "Type your message…";
@@ -1018,6 +1183,7 @@ export class UI {
       mic.innerHTML = this.listening ? ICONS.micOff : ICONS.mic;
     }
     if (hintBtn) hintBtn.disabled = this.busy || this.ended;
+    if (exportBtn) exportBtn.disabled = !this.resultsReady;
   }
 
   private renderMessages(): void {
@@ -1078,6 +1244,14 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function humanizeId(id: string): string {
+  return id
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 function escapeAttr(s: string): string {
   return escapeHtml(s);

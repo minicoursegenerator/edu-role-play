@@ -1,6 +1,6 @@
 # Bring your own API key
 
-Bundled role-plays ship with **no API key** in the HTML — they hit the Mini Course Generator Cloudflare Workers AI proxy by default, so learners can start practicing with zero setup. If a learner prefers to use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits), the runtime supports that.
+Bundled role-plays ship with **no API key** in the HTML — they hit a Cloudflare Worker proxy (`POST /v1/chat`) by default, which calls Cloudflare Workers AI through the `env.AI` binding (no key on the server either). Learners can start practicing with zero setup. If a learner prefers to use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits), the runtime supports that.
 
 ## How a learner switches
 
@@ -17,7 +17,7 @@ Bundled role-plays ship with **no API key** in the HTML — they hit the Mini Co
 
 - The key is written to `localStorage` under `edu-role-play:user-key:v1`.
 - It never leaves the browser except to call the provider the learner selected (`api.cloudflare.com` / `api.openai.com` / `api.anthropic.com`).
-- Neither Mini Course Generator nor the author of the role-play sees it.
+- Neither the proxy Worker nor the author of the role-play sees it.
 - Clearing browser storage for the site removes it. Incognito windows don't persist it.
 
 ## Security caveats
@@ -28,10 +28,10 @@ Bundled role-plays ship with **no API key** in the HTML — they hit the Mini Co
 
 ## Provider notes
 
-- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The default path works because Mini Course Generator ships bundles through its backend gateway, which holds the key server-side. BYO OpenAI and Anthropic don't have this limitation.
+- **Cloudflare** is the default and cheapest path (free tier available). The account ID is required alongside the token. **Known limitation**: Cloudflare's REST API does not allow direct browser calls, so a learner-supplied Cloudflare key will fail with a CORS error unless the learner routes it through a Worker proxy of their own. The default path works because bundles route through the project's proxy Worker, which uses the AI binding (no key needed). BYO OpenAI and Anthropic don't have this limitation.
 - **Anthropic** calls from a browser require the `anthropic-dangerous-direct-browser-access: true` header, which the runtime sets automatically. No CORS proxy needed.
 - **OpenAI** works out of the box; expects an organization-scoped key.
 
 ## For authors
 
-Authors don't need to do anything to enable this — the BYO UI is always present in bundled role-plays. Bundles route to the hosted Mini Course Generator proxy by default (no key in the HTML); the BYO override is purely client-side.
+Authors don't need to do anything to enable this — the BYO UI is always present in bundled role-plays. Bundles route to the project's proxy Worker by default (no key in the HTML); the BYO override is purely client-side.

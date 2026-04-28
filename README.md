@@ -97,7 +97,7 @@ A role-play composition is a single HTML file with custom elements declaring the
 
 ## Inference
 
-Bundled role-plays call the Mini Course Generator backend gateway (`gateway.minicoursegenerator.com`) by default — no API key shipped in the HTML, nothing for the author to configure. The backend holds the provider key and applies rate limits. Point bundles at a different backend with `--gateway-url`.
+Bundled role-plays call a self-hosted Cloudflare Worker proxy (`POST {proxy}/v1/chat`) — no API key ships in the HTML. The Worker calls Cloudflare Workers AI through the `env.AI` binding, so there's no token or account id to manage on the server either. Deploy your own with [`packages/proxy-worker`](packages/proxy-worker/) and point bundles at it via `--proxy-url <url>` or `EDU_ROLE_PLAY_PROXY_URL`.
 
 Learners can optionally switch to their own Cloudflare, OpenAI, or Anthropic key at runtime via the footer — stored in `localStorage`, never in the HTML source. See [docs/byo-key.md](docs/byo-key.md).
 

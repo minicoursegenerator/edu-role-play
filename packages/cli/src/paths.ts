@@ -35,3 +35,7 @@ export function archetypesDir(): string {
 export function blankTemplatePath(): string {
   return resolve(cliPackageRoot, "templates", "blank.html");
 }
+
+export function portraitsDir(): string {
+  return resolve(cliPackageRoot, "templates", "portraits");
+}

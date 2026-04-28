@@ -34,6 +34,7 @@ export function readCompositionFromDom(root: Element): CompositionData {
       goals: personaEl ? childText(personaEl, "goals") : "",
       constraints: personaEl ? childText(personaEl, "constraints") : "",
       speechPatterns: personaEl ? childText(personaEl, "speech-patterns") : "",
+      avatar: personaEl?.getAttribute("avatar") ?? "",
     },
     scenario: scenarioEl?.textContent?.trim() ?? "",
     contextBlocks: Array.from(root.querySelectorAll("edu-context")).map((el) => ({

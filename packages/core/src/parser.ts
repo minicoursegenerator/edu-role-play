@@ -40,6 +40,7 @@ function parsePersona(root: HTMLElement): Persona {
     goals: childText(el, "goals"),
     constraints: childText(el, "constraints"),
     speechPatterns: childText(el, "speech-patterns"),
+    avatar: el.getAttribute("avatar")?.trim() ?? "",
   };
 }
 

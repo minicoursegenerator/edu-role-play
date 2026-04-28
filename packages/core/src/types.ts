@@ -5,6 +5,7 @@ export interface Persona {
   goals: string;
   constraints: string;
   speechPatterns: string;
+  avatar: string;
 }
 
 export interface Objective {

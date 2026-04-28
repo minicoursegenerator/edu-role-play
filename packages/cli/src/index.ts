@@ -4,6 +4,7 @@ import { initCommand } from "./commands/init.js";
 import { lintCommand } from "./commands/lint.js";
 import { bundleCommand } from "./commands/bundle.js";
 import { previewCommand } from "./commands/preview.js";
+import { scormCommand } from "./commands/scorm.js";
 import { startCommand } from "./commands/start.js";
 
 const program = new Command();
@@ -35,10 +36,10 @@ program
   .description("Inline the runtime into the composition, producing a self-contained HTML.")
   .argument("<file>", "path to the composition HTML file")
   .option("-o, --output <path>", "output path (default: <input>.bundled.html)")
-  .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
+  .option("--model <id>", "model override (default: proxy picks default)")
   .option(
-    "--gateway-url <url>",
-    "MCG backend gateway URL (or set EDU_ROLE_PLAY_GATEWAY_URL); defaults to gateway.minicoursegenerator.com",
+    "--proxy-url <url>",
+    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL). Required. Deploy with packages/proxy-worker.",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -50,10 +51,10 @@ program
   .description("Bundle a composition (if needed) and open it in the default browser.")
   .argument("<file>", "path to the composition HTML or a pre-bundled .bundled.html file")
   .option("-o, --output <path>", "bundle output path (default: <input>.bundled.html)")
-  .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
+  .option("--model <id>", "model override (default: proxy picks default)")
   .option(
-    "--gateway-url <url>",
-    "MCG backend gateway URL (or set EDU_ROLE_PLAY_GATEWAY_URL)",
+    "--proxy-url <url>",
+    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL)",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -72,6 +73,22 @@ program
   .action((file: string, opts) => {
     const code = previewCommand(file, opts);
     if (code !== 0) process.exit(code);
+  });
+
+program
+  .command("scorm")
+  .description("Package a composition as a SCORM 1.2 ZIP with the runtime inlined.")
+  .argument("<file>", "path to the composition HTML file")
+  .option("-o, --output <path>", "output path (default: <input>.scorm.zip)")
+  .option("--title <title>", "SCORM manifest title (default: composition id)")
+  .option("--model <id>", "model override (default: proxy picks default)")
+  .option(
+    "--proxy-url <url>",
+    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL). Required.",
+  )
+  .option("--skip-lint", "skip lint check (not recommended)", false)
+  .action((file: string, opts) => {
+    process.exit(scormCommand(file, opts));
   });
 
 program.parseAsync(process.argv).catch((err) => {

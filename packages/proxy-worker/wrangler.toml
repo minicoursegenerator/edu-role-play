@@ -1,0 +1,16 @@
+name = "edu-role-play-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Workers AI binding. The Worker calls env.AI.run(...) directly — no API
+# token, no account id needed at runtime. Auth is handled by the binding.
+[ai]
+binding = "AI"
+
+# Cloudflare's built-in rate limiting binding. 30 requests per IP per 60s.
+# Tune via the dashboard or by editing here and redeploying.
+[[unsafe.bindings]]
+name = "RL"
+type = "ratelimit"
+namespace_id = "2001"
+simple = { limit = 30, period = 60 }

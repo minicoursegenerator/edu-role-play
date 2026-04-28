@@ -1,6 +1,6 @@
 # @edu-role-play/worker-proxy (legacy)
 
-> **Deprecated.** The default CLI now bundles against the Mini Course Generator backend gateway (`gateway.minicoursegenerator.com`), which holds all provider keys server-side. This Worker is kept only for self-hosters who want to run their own Cloudflare-only proxy instead of routing through MCG.
+> **Legacy.** The default CLI now bundles against the binding-based proxy in [`../proxy-worker`](../proxy-worker), which has no API token to manage. This older Worker is kept only for self-hosters who already deployed it with a `CF_API_TOKEN` and want to keep that setup, or who want a CORS-proxy in front of an existing Cloudflare Workers AI account for BYO use.
 
 Cloudflare Worker that sits in front of Workers AI for bundled role-plays. Lets the bundled HTML call a CORS-enabled origin instead of `api.cloudflare.com` (which doesn't allow browser-direct calls) and keeps the Cloudflare token on the server side so it never ships in HTML source.
 

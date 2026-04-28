@@ -10,16 +10,19 @@ Scaffolds `<name>.html` from an archetype (e.g. `skeptical-buyer`) or the blank 
 
 Validates the composition. Exits 0 on success, 1 on any error. Warnings do not fail.
 
-## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--gateway-url <url>] [--skip-lint]`
+## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--proxy-url <url>] [--skip-lint]`
 
-Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.bundled.html`. Default model: `@cf/meta/llama-3.1-8b-instruct`.
+Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.bundled.html`. Model defaults to whatever the proxy picks (`@cf/meta/llama-3.1-8b-instruct`) — pass `--model` only to override.
 
-**No API key is ever baked into the HTML.** The bundle calls `POST {gateway}/api/edu-role-play/chat` on the Mini Course Generator backend; the backend holds the provider key and applies rate limits. Learners can optionally switch to their own key at runtime via the BYO-key UI (stored in browser localStorage, not in the HTML).
+**No API key is ever baked into the HTML.** The bundle calls `POST {proxy}/v1/chat` on the project's Cloudflare Worker proxy, which forwards to Cloudflare Workers AI through its `env.AI` binding (no token needed). Learners can optionally switch to their own key at runtime via the BYO-key UI (stored in browser localStorage, not in the HTML).
+
+A proxy URL is required at bundle time. Set once via `EDU_ROLE_PLAY_PROXY_URL` (or pass `--proxy-url <url>`). Deploy the Worker with `cd packages/proxy-worker && npm run deploy` — see [../../packages/proxy-worker/README.md](../../packages/proxy-worker/README.md).
 
 Overrides:
-- `--gateway-url <url>` (or `EDU_ROLE_PLAY_GATEWAY_URL`): point bundles at a different backend (e.g. staging, self-hosted).
+- `--model <id>`: force a specific Workers AI model instead of the proxy default.
+- `--proxy-url <url>` (or `EDU_ROLE_PLAY_PROXY_URL`): point bundles at a specific Worker (staging, self-hosted, etc.).
 
-## `edu-role-play start <file> [--gateway-url <url>]`
+## `edu-role-play start <file> [--model <id>] [--proxy-url <url>]`
 
 Bundles the composition (using the same defaults as `bundle`) and opens the resulting `.bundled.html` in the user's default browser. This is the one-shot "try the role-play" command to hand the user.
 

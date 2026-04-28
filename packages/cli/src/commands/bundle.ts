@@ -1,23 +1,45 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseComposition, lint, hasErrors } from "@edu-role-play/core";
-import { runtimeIifePath } from "../paths.js";
+import { portraitsDir, runtimeIifePath } from "../paths.js";
 import { recordBundle } from "../registry.js";
 
-interface BundleOptions {
-  output?: string;
-  model?: string;
-  gatewayUrl?: string;
-  skipLint?: boolean;
+const DEFAULT_AVATAR = "middle-aged-man-friendly";
+
+function inlineAvatar(html: string, avatarId: string): string {
+  const id = avatarId.trim() || DEFAULT_AVATAR;
+  if (id.startsWith("data:") || id.startsWith("http")) return html;
+  const file = resolve(portraitsDir(), `${id}.jpg`);
+  if (!existsSync(file)) {
+    console.warn(
+      `warn: avatar "${id}" not found in built-in portraits — leaving raw avatar attribute.`,
+    );
+    return html;
+  }
+  const data = readFileSync(file).toString("base64");
+  const dataUrl = `data:image/jpeg;base64,${data}`;
+  // Replace avatar="..." (or insert one) on the first <edu-persona ...>
+  return html.replace(/<edu-persona\b([^>]*)>/i, (full, attrs: string) => {
+    if (/\bavatar=/.test(attrs)) {
+      return `<edu-persona${attrs.replace(/avatar="[^"]*"/, `avatar="${dataUrl}"`)}>`;
+    }
+    return `<edu-persona${attrs} avatar="${dataUrl}">`;
+  });
 }
 
-const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
-// Mini Course Generator backend gateway. Bundled HTML posts to
-// `${GATEWAY_URL}/api/edu-role-play/chat`; the backend holds the provider key.
-// Override with --gateway-url / EDU_ROLE_PLAY_GATEWAY_URL (e.g. staging).
-const DEFAULT_GATEWAY_URL = "https://gateway.minicoursegenerator.com";
+export interface BundleOptions {
+  output?: string;
+  model?: string;
+  proxyUrl?: string;
+  skipLint?: boolean;
+  scorm?: boolean;
+}
 
-export function bundleCommand(file: string, opts: BundleOptions): number {
+export function buildBundledHtml(file: string, opts: BundleOptions): {
+  path: string;
+  id: string;
+  output: string;
+} | null {
   const path = resolve(process.cwd(), file);
   const html = readFileSync(path, "utf8");
   const comp = parseComposition(html);
@@ -30,30 +52,32 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     }
     if (hasErrors(issues)) {
       console.error("Lint errors — bundle aborted. Pass --skip-lint to force.");
-      return 1;
+      return null;
     }
   }
 
-  const model = opts.model ?? DEFAULT_MODEL;
-  const explicitGateway = opts.gatewayUrl ?? process.env.EDU_ROLE_PLAY_GATEWAY_URL ?? "";
-  const baseUrl = explicitGateway || DEFAULT_GATEWAY_URL;
+  const baseUrl = (opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "").trim();
+  if (!baseUrl) {
+    console.error(
+      "Bundle requires a proxy URL. Pass --proxy-url <url> or set EDU_ROLE_PLAY_PROXY_URL.\n" +
+        "Deploy your own with `cd packages/proxy-worker && npm run deploy` (see packages/proxy-worker/README.md).",
+    );
+    return null;
+  }
+
+  const model = opts.model ?? "";
 
   const config = {
-    provider: "mcg" as const,
+    provider: "proxy" as const,
     apiKey: "",
     accountId: "",
     model,
     baseUrl,
     bundleId: comp.id || undefined,
+    scorm: { enabled: opts.scorm === true, version: "1.2" as const },
   };
 
-  if (explicitGateway) {
-    console.log(`Bundling with gateway: ${baseUrl}`);
-  } else {
-    console.log(
-      `Bundling with Mini Course Generator gateway. Pass --gateway-url to use a different backend.`,
-    );
-  }
+  console.log(`Bundling with proxy: ${baseUrl}`);
 
   const runtimeJs = readFileSync(runtimeIifePath(), "utf8");
   const configJson = JSON.stringify(config).replace(/</g, "\\u003c");
@@ -62,16 +86,24 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
     `<script type="application/json" id="edu-role-play-config">${configJson}</script>\n` +
     `<script>${runtimeJs}</script>\n`;
 
+  const htmlWithAvatar = inlineAvatar(html, comp.persona.avatar);
+
   let output: string;
-  if (/<\/body>/i.test(html)) {
-    output = html.replace(/<\/body>/i, `${injection}</body>`);
+  if (/<\/body>/i.test(htmlWithAvatar)) {
+    output = htmlWithAvatar.replace(/<\/body>/i, `${injection}</body>`);
   } else {
-    output = html + "\n" + injection;
+    output = htmlWithAvatar + "\n" + injection;
   }
 
-  const outPath = resolve(process.cwd(), opts.output ?? path.replace(/\.html$/, ".bundled.html"));
-  writeFileSync(outPath, output, "utf8");
-  const hash = recordBundle(comp.id || file, path, outPath, output);
-  console.log(`Bundled ${path} → ${outPath} (hash ${hash}).`);
+  return { path, id: comp.id || file, output };
+}
+
+export function bundleCommand(file: string, opts: BundleOptions): number {
+  const bundled = buildBundledHtml(file, opts);
+  if (!bundled) return 1;
+  const outPath = resolve(process.cwd(), opts.output ?? bundled.path.replace(/\.html$/, ".bundled.html"));
+  writeFileSync(outPath, bundled.output, "utf8");
+  const hash = recordBundle(bundled.id, bundled.path, outPath, bundled.output);
+  console.log(`Bundled ${bundled.path} → ${outPath} (hash ${hash}).`);
   return 0;
 }

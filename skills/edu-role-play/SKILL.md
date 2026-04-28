@@ -32,6 +32,36 @@ Before generating any composition, confirm all five:
 
 If the user is vague, ask the smallest next question. Do not invent content that changes the pedagogical intent.
 
+## 2.5. Plan confirmation (before generating)
+
+Once you have all five pieces of the Pedagogical DNA, **do not start writing XML yet**. First, summarize the plan back to the user in 4–6 short lines and ask for explicit approval. Use this exact shape:
+
+```
+Plan:
+- Conversation: <one line on what the role-play is about>
+- Learner role: <who the user is practicing as>
+- Persona: <name + role of the AI character they'll talk to>
+- Objectives: <comma-separated short list>
+- Difficulty / tone: <if known>
+
+Want me to generate this, or change anything first?
+```
+
+Only proceed to generate the composition HTML after the user confirms ("yes", "go", "looks good", etc.). If they request changes, update the plan, re-print it, and ask again. Do not skip this step even when the DNA was provided up-front in a single message — confirmation is the gate.
+
+## 2.6. Persona avatar
+
+Set an `avatar` attribute on `<edu-persona>` from this fixed list. The CLI inlines the matching portrait into the bundled HTML at build time. Pick the closest match — do not invent new IDs.
+
+- `middle-aged-man-friendly` — approachable, salt-and-pepper, business casual
+- `middle-aged-man-frustrated` — serious / tense expression, good for upset customers or hard stakeholders
+- `middle-aged-woman-professional` — confident, business attire
+- `young-woman-professional` — late-20s, polished
+- `young-man-thoughtful` — late-20s, neutral / considered expression
+- `older-woman-warm` — 60s+, warm and smiling
+
+Choose primarily on demographic fit (age, gender), then tone match. If none fit, omit the attribute and the runtime falls back to a generic silhouette.
+
 ## 3. Composition structure
 
 Wrap the composition in the standard HTML shell below. The `<style>` block and the "not bundled yet" `<div data-erp-fallback>` are **required** — they turn the raw source into a self-explaining page when a user opens it directly in a browser. The runtime wipes the `<edu-role-play>` contents on mount, so these have no effect on the bundled output.
@@ -132,9 +162,9 @@ Each role-play gets its own folder so files don't pile up in the user's working 
    cd <slug>
    npx edu-role-play start <slug>.html
    ```
-   `start` bundles against the default Mini Course Generator backend gateway and opens the result in the user's browser.
+   `start` bundles against the proxy Worker URL in `EDU_ROLE_PLAY_PROXY_URL` and opens the result in the user's browser. If the env var isn't set, the CLI prints a clear error pointing to `packages/proxy-worker/README.md` for one-time setup.
 
-Only suggest `--gateway-url <…>` if the user *explicitly* asks to route through a different MCG backend (e.g. staging or self-hosted). There is no option to bake an API key into the HTML — keys never ship in source.
+Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker (staging, self-hosted under a custom domain, etc.). There is no option to bake an API key into the HTML — keys never ship in source.
 
 ## 9. On-demand references
 
@@ -148,4 +178,4 @@ Load only when needed:
 
 ## Privacy note to surface to the user
 
-Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the Mini Course Generator backend gateway by default (the backend forwards to the underlying LLM provider, currently Cloudflare Workers AI). Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).
+Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the project's Cloudflare Worker proxy by default (`POST /v1/chat`), which calls Cloudflare Workers AI via the `env.AI` binding — no API keys live anywhere. Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).
