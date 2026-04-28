@@ -6,6 +6,7 @@ import { bundleCommand } from "./commands/bundle.js";
 import { previewCommand } from "./commands/preview.js";
 import { scormCommand } from "./commands/scorm.js";
 import { startCommand } from "./commands/start.js";
+import { deployProxyCommand } from "./commands/deploy-proxy.js";
 
 const program = new Command();
 program
@@ -39,7 +40,7 @@ program
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
     "--proxy-url <url>",
-    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL). Required. Deploy with packages/proxy-worker.",
+    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL, or run `edu-role-play deploy-proxy`).",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -84,11 +85,21 @@ program
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
     "--proxy-url <url>",
-    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL). Required.",
+    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL, or run `edu-role-play deploy-proxy`).",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
     process.exit(scormCommand(file, opts));
+  });
+
+program
+  .command("deploy-proxy")
+  .description("Guided deploy of your own Cloudflare Worker proxy for sharing role-plays.")
+  .option("--provider <id>", "workers-ai | anthropic | openai (skips prompt)")
+  .option("--non-interactive", "fail rather than prompt; use with --provider + env vars", false)
+  .action(async (opts) => {
+    const code = await deployProxyCommand(opts);
+    if (code !== 0) process.exit(code);
   });
 
 program.parseAsync(process.argv).catch((err) => {

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { parseComposition, lint, hasErrors } from "@edu-role-play/core";
 import { portraitsDir, runtimeIifePath } from "../paths.js";
 import { recordBundle } from "../registry.js";
+import { readUserConfig } from "../config.js";
 
 const DEFAULT_AVATAR = "middle-aged-man-friendly";
 
@@ -56,11 +57,16 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
     }
   }
 
-  const baseUrl = (opts.proxyUrl ?? process.env.EDU_ROLE_PLAY_PROXY_URL ?? "").trim();
+  const baseUrl = (
+    opts.proxyUrl ??
+    process.env.EDU_ROLE_PLAY_PROXY_URL ??
+    readUserConfig().proxyUrl ??
+    ""
+  ).trim();
   if (!baseUrl) {
     console.error(
-      "Bundle requires a proxy URL. Pass --proxy-url <url> or set EDU_ROLE_PLAY_PROXY_URL.\n" +
-        "Deploy your own with `cd packages/proxy-worker && npm run deploy` (see packages/proxy-worker/README.md).",
+      "Bundle requires a proxy URL. Run `edu-role-play deploy-proxy` to deploy your own,\n" +
+        "or pass --proxy-url <url> / set EDU_ROLE_PLAY_PROXY_URL.",
     );
     return null;
   }

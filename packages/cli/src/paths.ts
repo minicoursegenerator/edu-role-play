@@ -39,3 +39,9 @@ export function blankTemplatePath(): string {
 export function portraitsDir(): string {
   return resolve(cliPackageRoot, "templates", "portraits");
 }
+
+export function proxyWorkerTemplateDir(): string {
+  // Shipped inside the CLI's own templates folder. Populated at build time
+  // by scripts/sync-templates.mjs from packages/proxy-worker/.
+  return resolve(cliPackageRoot, "templates", "proxy-worker");
+}
