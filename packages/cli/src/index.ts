@@ -40,7 +40,7 @@ program
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
     "--proxy-url <url>",
-    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL, or run `edu-role-play deploy-proxy`).",
+    "proxy Worker URL (default: shared public proxy; run `edu-role-play deploy-proxy` for your own).",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -55,7 +55,7 @@ program
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
     "--proxy-url <url>",
-    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL)",
+    "proxy Worker URL (default: shared public proxy; run `edu-role-play deploy-proxy` for your own).",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {
@@ -85,7 +85,7 @@ program
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
     "--proxy-url <url>",
-    "proxy Worker URL (or set EDU_ROLE_PLAY_PROXY_URL, or run `edu-role-play deploy-proxy`).",
+    "proxy Worker URL (default: shared public proxy; run `edu-role-play deploy-proxy` for your own).",
   )
   .option("--skip-lint", "skip lint check (not recommended)", false)
   .action((file: string, opts) => {

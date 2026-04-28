@@ -7,6 +7,11 @@ import { readUserConfig } from "../config.js";
 
 const DEFAULT_AVATAR = "middle-aged-man-friendly";
 
+// Public shared proxy hosted by edu-role-play. Rate-limited and intended for
+// trial / iteration. Run `edu-role-play deploy-proxy` for your own before
+// sharing or using your own API key.
+const DEFAULT_PROXY_URL = "https://erp-proxy.eren-be8.workers.dev";
+
 function inlineAvatar(html: string, avatarId: string): string {
   const id = avatarId.trim() || DEFAULT_AVATAR;
   if (id.startsWith("data:") || id.startsWith("http")) return html;
@@ -57,19 +62,14 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
     }
   }
 
-  const baseUrl = (
+  const explicit = (
     opts.proxyUrl ??
     process.env.EDU_ROLE_PLAY_PROXY_URL ??
     readUserConfig().proxyUrl ??
     ""
   ).trim();
-  if (!baseUrl) {
-    console.error(
-      "Bundle requires a proxy URL. Run `edu-role-play deploy-proxy` to deploy your own,\n" +
-        "or pass --proxy-url <url> / set EDU_ROLE_PLAY_PROXY_URL.",
-    );
-    return null;
-  }
+  const baseUrl = explicit || DEFAULT_PROXY_URL;
+  const usingDefault = !explicit;
 
   const model = opts.model ?? "";
 
@@ -83,7 +83,13 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
     scorm: { enabled: opts.scorm === true, version: "1.2" as const },
   };
 
-  console.log(`Bundling with proxy: ${baseUrl}`);
+  console.log(`Bundling with proxy: ${baseUrl}${usingDefault ? " (shared default)" : ""}`);
+  if (usingDefault) {
+    console.log(
+      "Note: shared proxy is rate-limited and intended for iteration. Before sharing this bundle\n" +
+        "or using your own API key, run `edu-role-play deploy-proxy` to deploy your own.",
+    );
+  }
 
   const runtimeJs = readFileSync(runtimeIifePath(), "utf8");
   const configJson = JSON.stringify(config).replace(/</g, "\\u003c");
