@@ -1,6 +1,6 @@
 {
   "name": "@edu-role-play/proxy-worker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Cloudflare Worker that fronts default edu-role-play bundles. Calls Workers AI via the env.AI binding (no API keys), adds CORS, and rate-limits per IP.",
   "license": "MIT",

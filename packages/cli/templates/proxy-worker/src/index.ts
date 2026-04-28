@@ -8,12 +8,13 @@
 //
 // Per-IP rate limiting protects the deployer from runaway use.
 //
-// Endpoint:
-//   POST /v1/chat
-//   { messages: [{role,content}, ...], model?: string,
-//     temperature?: number, maxTokens?: number }
-//   → 200 { text: string }
-//   → 4xx/5xx { error: string, code?: string }
+// Endpoint: POST /v1/chat
+//   body: { messages: [{role,content}, ...], model?, temperature?, maxTokens?, stream? }
+//   non-stream → 200 { text: string }
+//   stream:    → 200 text/event-stream of `data: {"text": "<delta>"}` events,
+//                terminated by `data: [DONE]`. Errors during the stream are
+//                emitted as `data: {"error": "<msg>"}` and then the stream closes.
+//   error:     → 4xx/5xx { error: string, code?: string }
 //
 // Request bodies are never logged — they contain learner transcripts.
 
@@ -21,6 +22,9 @@ import {
   callAnthropic,
   callOpenAi,
   callWorkersAi,
+  streamAnthropic,
+  streamOpenAi,
+  streamWorkersAi,
   type ChatMessage,
   type ProviderInput,
   type WorkersAiBinding,
@@ -38,7 +42,7 @@ const MAX_TOKENS_CAP = 1024;
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
   "Access-Control-Max-Age": "86400",
 };
 
@@ -62,6 +66,7 @@ interface ChatRequest {
   model?: unknown;
   temperature?: unknown;
   maxTokens?: unknown;
+  stream?: unknown;
 }
 
 function parseMessages(value: unknown): ChatMessage[] | null {
@@ -82,6 +87,42 @@ async function dispatch(env: Env, input: ProviderInput): Promise<string> {
   if (env.ANTHROPIC_API_KEY) return callAnthropic(env.ANTHROPIC_API_KEY, input);
   if (env.OPENAI_API_KEY) return callOpenAi(env.OPENAI_API_KEY, input);
   return callWorkersAi(env.AI, input);
+}
+
+function dispatchStream(env: Env, input: ProviderInput): AsyncIterable<string> {
+  if (env.ANTHROPIC_API_KEY) return streamAnthropic(env.ANTHROPIC_API_KEY, input);
+  if (env.OPENAI_API_KEY) return streamOpenAi(env.OPENAI_API_KEY, input);
+  return streamWorkersAi(env.AI, input);
+}
+
+function streamingResponse(iter: AsyncIterable<string>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const delta of iter) {
+          if (!delta) continue;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: delta })}\n\n`));
+        }
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "unknown error";
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return withCors(
+    new Response(stream, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+      },
+    }),
+  );
 }
 
 export default {
@@ -123,9 +164,18 @@ export default {
         ? Math.floor(body.maxTokens)
         : 512;
     const maxTokens = Math.max(16, Math.min(MAX_TOKENS_CAP, requestedMax));
+    const input: ProviderInput = { messages, model, temperature, maxTokens };
+
+    const wantsStream =
+      body.stream === true ||
+      (request.headers.get("accept") || "").toLowerCase().includes("text/event-stream");
+
+    if (wantsStream) {
+      return streamingResponse(dispatchStream(env, input));
+    }
 
     try {
-      const text = await dispatch(env, { messages, model, temperature, maxTokens });
+      const text = await dispatch(env, input);
       if (!text) return json(502, { error: "upstream returned empty response" });
       return json(200, { text });
     } catch (err) {
