@@ -78,8 +78,13 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ChatOpts {
+  temperature?: number;
+}
+
 export interface Provider {
-  chat(messages: ChatMessage[], opts?: { temperature?: number }): Promise<string>;
+  chat(messages: ChatMessage[], opts?: ChatOpts): Promise<string>;
+  chatStream(messages: ChatMessage[], opts?: ChatOpts): AsyncIterable<string>;
 }
 
 export interface ScoreResult {

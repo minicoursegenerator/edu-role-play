@@ -480,6 +480,7 @@ export class UI {
 
   private ttsEnabled: boolean;
   private messages: MsgRecord[] = [];
+  private streamingAssistant = false;
   private objectivesDone = new Set<string>();
   private busy = false;
   private ended = false;
@@ -586,6 +587,33 @@ export class UI {
     this.renderMessages();
   }
 
+  appendAssistantDelta(text: string): void {
+    if (!text) return;
+    if (!this.streamingAssistant) {
+      this.streamingAssistant = true;
+      this.messages.push({ role: "assistant", content: "" });
+    }
+    const last = this.messages[this.messages.length - 1];
+    if (last && last.role === "assistant") {
+      last.content += text;
+    }
+    this.startTimer();
+    this.renderMessages();
+  }
+
+  finishAssistantStream(): void {
+    if (!this.streamingAssistant) return;
+    const last = this.messages[this.messages.length - 1];
+    if (last && last.role === "assistant") {
+      const { text, tip } = parseTip(last.content);
+      last.content = text;
+      if (tip) last.tip = tip;
+      this.speak(text);
+    }
+    this.streamingAssistant = false;
+    this.renderMessages();
+  }
+
   addSystemNote(text: string): void {
     this.messages.push({ role: "system-note", content: text });
     this.renderMessages();
@@ -614,6 +642,7 @@ export class UI {
     this.turn = 0;
     this.seconds = 0;
     this.stopTimer();
+    this.streamingAssistant = false;
     window.speechSynthesis?.cancel();
     this.debriefNode?.remove();
     this.debriefNode = null;

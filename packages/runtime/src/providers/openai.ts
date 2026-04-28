@@ -1,41 +1,51 @@
-import type { Provider, RuntimeConfig } from "../types";
+import type { ChatMessage, ChatOpts, Provider, RuntimeConfig } from "../types";
+import { collectStream, sseEvents } from "./sse";
 
 export function createOpenAIProvider(config: RuntimeConfig): Provider {
   const { apiKey, model, baseUrl } = config;
   const origin = baseUrl ?? "https://api.openai.com";
   const url = `${origin}/v1/chat/completions`;
 
-  return {
-    async chat(messages, opts) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: opts?.temperature ?? 0.7,
-          max_tokens: 512,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`OpenAI ${res.status}: ${redact(body, apiKey)}`);
-      }
-      const data = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
+  async function* stream(messages: ChatMessage[], opts?: ChatOpts): AsyncGenerator<string> {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: opts?.temperature ?? 0.7,
+        max_tokens: 512,
+        stream: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`OpenAI ${res.status}: ${redact(body, apiKey)}`);
+    }
+    for await (const payload of sseEvents(res)) {
+      let evt: {
+        choices?: Array<{ delta?: { content?: string } }>;
         error?: { message?: string };
       };
-      if (data.error) {
-        throw new Error(`OpenAI error: ${data.error.message ?? "unknown"}`);
+      try {
+        evt = JSON.parse(payload);
+      } catch {
+        continue;
       }
-      const text = data.choices?.[0]?.message?.content;
-      if (typeof text !== "string") {
-        throw new Error("OpenAI returned no response text");
-      }
-      return text.trim();
+      if (evt.error) throw new Error(`OpenAI error: ${evt.error.message ?? "unknown"}`);
+      const piece = evt.choices?.[0]?.delta?.content;
+      if (piece) yield piece;
+    }
+  }
+
+  return {
+    chatStream: stream,
+    async chat(messages: ChatMessage[], opts?: ChatOpts) {
+      return collectStream(stream(messages, opts));
     },
   };
 }

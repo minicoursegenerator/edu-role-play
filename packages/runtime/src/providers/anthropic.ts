@@ -1,45 +1,54 @@
-import type { ChatMessage, Provider, RuntimeConfig } from "../types";
+import type { ChatMessage, ChatOpts, Provider, RuntimeConfig } from "../types";
+import { collectStream, sseEvents } from "./sse";
 
 export function createAnthropicProvider(config: RuntimeConfig): Provider {
   const { apiKey, model, baseUrl } = config;
   const origin = baseUrl ?? "https://api.anthropic.com";
   const url = `${origin}/v1/messages`;
 
+  async function* stream(messages: ChatMessage[], opts?: ChatOpts): AsyncGenerator<string> {
+    const { system, conversation } = splitSystem(messages);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({
+        model,
+        system: system || undefined,
+        messages: conversation,
+        temperature: opts?.temperature ?? 0.7,
+        max_tokens: 512,
+        stream: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Anthropic ${res.status}: ${redact(body, apiKey)}`);
+    }
+    for await (const payload of sseEvents(res)) {
+      let evt: { type?: string; delta?: { type?: string; text?: string }; error?: { message?: string } };
+      try {
+        evt = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (evt.error) throw new Error(`Anthropic error: ${evt.error.message ?? "unknown"}`);
+      if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+        const text = evt.delta.text;
+        if (text) yield text;
+      }
+    }
+  }
+
   return {
+    chatStream: stream,
     async chat(messages, opts) {
-      const { system, conversation } = splitSystem(messages);
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          system: system || undefined,
-          messages: conversation,
-          temperature: opts?.temperature ?? 0.7,
-          max_tokens: 512,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Anthropic ${res.status}: ${redact(body, apiKey)}`);
-      }
-      const data = (await res.json()) as {
-        content?: Array<{ type?: string; text?: string }>;
-        error?: { message?: string };
-      };
-      if (data.error) {
-        throw new Error(`Anthropic error: ${data.error.message ?? "unknown"}`);
-      }
-      const text = data.content?.find((b) => b.type === "text")?.text;
-      if (typeof text !== "string") {
-        throw new Error("Anthropic returned no response text");
-      }
-      return text.trim();
+      return collectStream(stream(messages, opts));
     },
   };
 }

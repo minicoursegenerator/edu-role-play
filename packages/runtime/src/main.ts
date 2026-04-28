@@ -89,7 +89,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
   let sessionStartedAt = new Date().toISOString();
   let events: ActivityEvent[] = [];
   const turnCap = comp.termination.turnLimit ?? 20;
-  const checkEvery = comp.termination.objectiveCheckEvery ?? 3;
+  const checkEvery = comp.termination.objectiveCheckEvery ?? 1;
   const scorm = createScorm12Adapter(baked.scorm?.enabled === true && baked.scorm.version === "1.2");
   let ui!: UI;
 
@@ -108,6 +108,22 @@ export async function mount(host?: HTMLElement): Promise<void> {
   scorm.setIncomplete();
   window.addEventListener("beforeunload", finishScorm);
 
+  async function streamAssistantTurn(messages: ChatMessage[]): Promise<string> {
+    let raw = "";
+    let firstDelta = true;
+    for await (const delta of provider.chatStream(messages)) {
+      if (firstDelta) {
+        ui.showTyping(false);
+        firstDelta = false;
+      }
+      raw += delta;
+      ui.appendAssistantDelta(delta);
+    }
+    if (firstDelta) ui.showTyping(false);
+    ui.finishAssistantStream();
+    return normalizePersonaReply(raw);
+  }
+
   async function sendOpening() {
     try {
       ui.showTyping(true);
@@ -119,11 +135,9 @@ export async function mount(host?: HTMLElement): Promise<void> {
             `[The role-play begins now. You are ${comp.persona.name}${comp.persona.role ? ` (${comp.persona.role})` : ""}, and the LEARNER is the counterpart described in the scenario — never speak as the learner. Open the conversation in character with a natural opening line — 1–3 sentences. Reflect your character's current emotional state and goals from the moment the scenario starts (e.g., if you are furious, frustrated, skeptical, in a hurry, distracted — sound like it). Do NOT introduce yourself using the learner's company or job title. Do NOT break character. Do NOT include a coaching tip on this opening turn.]`,
         },
       ];
-      const opener = normalizePersonaReply(await provider.chat(openingMessages));
+      const opener = await streamAssistantTurn(openingMessages);
       history.push({ role: "assistant", content: opener });
       record("roleplay_start");
-      ui.showTyping(false);
-      ui.appendMessage({ role: "assistant", content: opener });
     } catch (err) {
       ui.showTyping(false);
       ui.showError(`Could not start: ${(err as Error).message}`);
@@ -141,11 +155,9 @@ export async function mount(host?: HTMLElement): Promise<void> {
       ui.setBusy(true);
       ui.showTyping(true);
       try {
-        const reply = normalizePersonaReply(await provider.chat(reinjectSystem(comp, history)));
+        const reply = await streamAssistantTurn(reinjectSystem(comp, history));
         history.push({ role: "assistant", content: reply });
         record("turn", { turn, role: "assistant" });
-        ui.showTyping(false);
-        ui.appendMessage({ role: "assistant", content: reply });
       } catch (err) {
         record("error", { phase: "reply", message: (err as Error).message });
         ui.showTyping(false);

@@ -1,4 +1,5 @@
-import type { Provider, RuntimeConfig } from "../types";
+import type { ChatMessage, ChatOpts, Provider, RuntimeConfig } from "../types";
+import { collectStream, sseEvents } from "./sse";
 
 export function createCloudflareProvider(config: RuntimeConfig): Provider {
   const { accountId, apiKey, model, baseUrl } = config;
@@ -18,42 +19,46 @@ export function createCloudflareProvider(config: RuntimeConfig): Provider {
     ? `${origin.replace(/\/+$/, "")}/ai/run/${model}`
     : `${origin}/client/v4/accounts/${accountId}/ai/run/${model}`;
 
+  async function* stream(messages: ChatMessage[], opts?: ChatOpts): AsyncGenerator<string> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    };
+    if (!proxyMode) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        messages,
+        temperature: opts?.temperature ?? 0.7,
+        max_tokens: 512,
+        stream: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Cloudflare AI ${res.status}: ${redact(body, apiKey)}`);
+    }
+    for await (const payload of sseEvents(res)) {
+      let evt: { response?: string; errors?: Array<{ message: string }> };
+      try {
+        evt = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (evt.errors?.length) {
+        throw new Error(`Cloudflare AI error: ${evt.errors.map((e) => e.message).join("; ")}`);
+      }
+      if (evt.response) yield evt.response;
+    }
+  }
+
   return {
+    chatStream: stream,
     async chat(messages, opts) {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (!proxyMode) {
-        headers.Authorization = `Bearer ${apiKey}`;
-      }
-      const res = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          messages,
-          temperature: opts?.temperature ?? 0.7,
-          max_tokens: 512,
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Cloudflare AI ${res.status}: ${redact(body, apiKey)}`);
-      }
-      const data = (await res.json()) as {
-        result?: { response?: string };
-        success?: boolean;
-        errors?: Array<{ message: string }>;
-      };
-      if (data.success === false) {
-        throw new Error(
-          `Cloudflare AI error: ${data.errors?.map((e) => e.message).join("; ") ?? "unknown"}`,
-        );
-      }
-      const text = data.result?.response;
-      if (typeof text !== "string") {
-        throw new Error("Cloudflare AI returned no response text");
-      }
-      return text.trim();
+      return collectStream(stream(messages, opts));
     },
   };
 }
