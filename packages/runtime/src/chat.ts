@@ -9,7 +9,7 @@ export function buildSystemPrompt(comp: CompositionData): string {
     p.constraints ? `Your constraints: ${p.constraints}` : "",
     p.speechPatterns ? `Speech patterns: ${p.speechPatterns}` : "",
     "",
-    `Scenario context — this describes THE LEARNER's role and situation, NOT yours. The learner is the human user you are talking to. Read it as background on who is talking to you, but do NOT adopt their role:`,
+    `Scenario context — this describes THE LEARNER's role and situation, NOT yours. The learner is the human user you are talking to. Any "You are..." phrasing inside this scenario refers to THEM, not you. Read it as background on who is talking to you, but do NOT adopt their job title, employer, or perspective:`,
     comp.scenario,
     ...comp.contextBlocks.flatMap((b) => [
       "",

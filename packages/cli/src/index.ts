@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { lintCommand } from "./commands/lint.js";
@@ -8,11 +11,14 @@ import { scormCommand } from "./commands/scorm.js";
 import { startCommand } from "./commands/start.js";
 import { deployProxyCommand } from "./commands/deploy-proxy.js";
 
+const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+const pkgVersion = JSON.parse(readFileSync(pkgPath, "utf8")).version as string;
+
 const program = new Command();
 program
   .name("edu-role-play")
   .description("Author, lint, preview, and bundle edu-role-play compositions.")
-  .version("0.1.0");
+  .version(pkgVersion);
 
 program
   .command("init")

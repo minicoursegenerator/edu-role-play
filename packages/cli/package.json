@@ -1,6 +1,6 @@
 {
   "name": "edu-role-play",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "CLI for edu-role-play: init, preview, lint, bundle.",
   "license": "MIT",
   "type": "module",
@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@edu-role-play/core": "0.1.9",
-    "@edu-role-play/runtime": "0.1.9",
+    "@edu-role-play/runtime": "0.1.11",
     "commander": "^12.1.0",
     "fflate": "^0.8.2"
   },

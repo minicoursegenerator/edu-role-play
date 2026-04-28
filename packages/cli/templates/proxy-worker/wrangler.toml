@@ -1,4 +1,4 @@
-name = "edu-role-play-proxy"
+name = "erp-proxy"
 main = "src/index.ts"
 compatibility_date = "2025-09-01"
 

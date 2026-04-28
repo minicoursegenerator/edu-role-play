@@ -261,6 +261,13 @@ textarea { font: inherit; color: inherit; }
   background: white; border-radius: 20px; padding: 32px 28px;
   max-width: 520px; width: 100%; max-height: 80vh; overflow-y: auto;
   box-shadow: 0 24px 64px oklch(0% 0 0 / 0.18);
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.modal-card::-webkit-scrollbar { width: 0; height: 0; background: transparent; }
+.modal-card:hover, .modal-card:focus-within { scrollbar-width: thin; }
+.modal-card:hover::-webkit-scrollbar, .modal-card:focus-within::-webkit-scrollbar { width: 8px; }
+.modal-card:hover::-webkit-scrollbar-thumb, .modal-card:focus-within::-webkit-scrollbar-thumb {
+  background: oklch(80% 0.01 255); border-radius: 4px;
 }
 .modal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
 .modal-eyebrow {
@@ -680,8 +687,11 @@ export class UI {
       };
       backdrop.querySelector(".brief-ok-btn")!.addEventListener("click", ok);
       this.root.appendChild(backdrop);
+      const card = backdrop.querySelector(".modal-card") as HTMLElement | null;
+      if (card) card.scrollTop = 0;
       const btn = backdrop.querySelector(".brief-ok-btn") as HTMLButtonElement | null;
-      btn?.focus();
+      btn?.focus({ preventScroll: true });
+      if (card) card.scrollTop = 0;
     });
   }
 
@@ -1076,7 +1086,6 @@ export class UI {
   }
 
   private renderSidebar(side: HTMLElement): void {
-    const p = this.comp.persona;
     side.innerHTML = `
       <div>
         <h5>Scenario</h5>
@@ -1090,18 +1099,6 @@ export class UI {
           Your debrief score reflects how well you hit these.
         </div>
       </div>
-
-      ${
-        p.background || p.goals || p.constraints
-          ? `<div>
-        <h5>Context</h5>
-        ${p.background ? `<div style="font-size:12.5px;color:oklch(30% 0.01 255);margin-bottom:6px;line-height:1.5"><b>Background.</b> ${escapeHtml(p.background)}</div>` : ""}
-        ${p.goals ? `<div style="font-size:12.5px;color:oklch(30% 0.01 255);margin-bottom:6px;line-height:1.5"><b>Goals.</b> ${escapeHtml(p.goals)}</div>` : ""}
-        ${p.constraints ? `<div style="font-size:12.5px;color:oklch(30% 0.01 255);line-height:1.5"><b>Constraints.</b> ${escapeHtml(p.constraints)}</div>` : ""}
-      </div>`
-          : ""
-      }
-
     `;
     this.renderObjectives();
   }

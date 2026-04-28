@@ -23,7 +23,7 @@ export interface WorkersAiBinding {
   run: (model: string, input: unknown) => Promise<{ response?: string }>;
 }
 
-const DEFAULT_WORKERS_AI_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const DEFAULT_WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 

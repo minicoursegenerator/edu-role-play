@@ -116,7 +116,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
         {
           role: "user",
           content:
-            "[The role-play begins now. The learner has just walked in / picked up. Open the conversation in character with a natural greeting or opening line — 1–3 sentences. Do not break character. Do not include a coaching tip on this opening turn.]",
+            `[The role-play begins now. You are ${comp.persona.name}${comp.persona.role ? ` (${comp.persona.role})` : ""}, and the LEARNER is the counterpart described in the scenario — never speak as the learner. Open the conversation in character with a natural opening line — 1–3 sentences. Reflect your character's current emotional state and goals from the moment the scenario starts (e.g., if you are furious, frustrated, skeptical, in a hurry, distracted — sound like it). Do NOT introduce yourself using the learner's company or job title. Do NOT break character. Do NOT include a coaching tip on this opening turn.]`,
         },
       ];
       const opener = normalizePersonaReply(await provider.chat(openingMessages));
@@ -196,9 +196,16 @@ export async function mount(host?: HTMLElement): Promise<void> {
           .join("\n");
         const lastPersona = [...history].reverse().find((m) => m.role === "assistant");
         const personaAskedQuestion = !!lastPersona && /\?\s*$|\?\s*["')\]]*\s*$/.test(lastPersona.content.trim());
+        const unmetObjectives = comp.objectives
+          .filter((o) => !completedObjectives.has(o.id))
+          .map((o) => `- ${o.text}`)
+          .join("\n");
+        const objectivesBlock = unmetObjectives
+          ? `Objectives the learner still needs to hit (prioritize these when proactive):\n${unmetObjectives}`
+          : `All objectives currently appear met — keep the learner steering toward a clean wrap-up or next step.`;
         const responseRule = personaAskedQuestion
-          ? `The persona's last message ends with a question. Your hint MUST be a direct answer to that question from the learner's point of view — not another question back, not a deflection. The learner can briefly add a follow-up, but the core must answer what was asked.`
-          : `No open question from the persona right now. Suggest a proactive line that advances the learner's objectives — this can include asking a good discovery question when appropriate.`;
+          ? `The persona's last message ends with a question. Your hint MUST be a direct answer to that question from the learner's point of view — not another question back, not a deflection. The learner can briefly add a follow-up, but the core must answer what was asked. Where natural, weave in progress toward an unmet objective from the list below.`
+          : `No open question from the persona right now. Suggest a proactive line that advances one of the unmet objectives below — this can include asking a good discovery question when appropriate.`;
         const prompt =
           `You are a silent coach helping THE LEARNER (the human user) navigate a role-play conversation with a fictional PERSONA (played by an AI). ` +
           `You are NOT the persona. Suggest ONE concrete next line THE LEARNER could say.\n\n` +
@@ -207,6 +214,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
           `- The LEARNER plays the counterpart role described in the scenario below (the scenario addresses the learner directly with "You are…").\n` +
           `- Your suggestion must be a line the LEARNER would say from THEIR role — never a line the PERSONA would say. If the persona is a customer, the learner is the agent/seller/etc., not another customer. Do not suggest questions or framings that only make sense from the persona's side of the table.\n\n` +
           `${responseRule}\n\n` +
+          `${objectivesBlock}\n\n` +
           `Output format: a single short sentence of coaching that includes the exact words the learner should say, wrapped in double quotes. No preamble, no explanation after.\n` +
           `Example when answering a question: Answer directly, e.g. "Yes — last quarter we measured it through X, Y, and Z."\n` +
           `Example when proactive: Try asking about their current process, e.g. "Walk me through how your team handles X today."\n\n` +
