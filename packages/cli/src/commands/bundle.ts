@@ -102,7 +102,7 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
 
   let output: string;
   if (/<\/body>/i.test(htmlWithAvatar)) {
-    output = htmlWithAvatar.replace(/<\/body>/i, `${injection}</body>`);
+    output = htmlWithAvatar.replace(/<\/body>/i, () => `${injection}</body>`);
   } else {
     output = htmlWithAvatar + "\n" + injection;
   }

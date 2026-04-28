@@ -56,7 +56,7 @@ export function previewCommand(file: string, opts: PreviewOptions): number {
     `<script type="application/json" id="edu-role-play-config">${configJson}</script>\n` +
     `<script>${runtimeJs}</script>\n`;
   const body = /<\/body>/i.test(html)
-    ? html.replace(/<\/body>/i, `${injection}</body>`)
+    ? html.replace(/<\/body>/i, () => `${injection}</body>`)
     : html + "\n" + injection;
 
   const server = createServer(async (req, res) => {
