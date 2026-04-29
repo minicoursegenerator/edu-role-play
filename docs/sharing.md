@@ -2,7 +2,9 @@
 
 A role-play bundle (`*.bundled.html`) calls a Cloudflare Worker proxy to talk to an LLM. Learners just open the file — they never see or hold an API key. As the creator, you deploy the Worker once.
 
-## Quick start
+There are two ways to deploy depending on whether you have a terminal.
+
+## Track A — terminal (Claude Code, Cursor, Codex, plain shell)
 
 ```bash
 npx edu-role-play deploy-proxy
@@ -22,6 +24,18 @@ After it finishes:
 npx edu-role-play bundle my-roleplay.html      # picks up the proxy URL from config
 # share the resulting my-roleplay.bundled.html with learners
 ```
+
+## Track B — web (claude.ai, no shell)
+
+If you're working with the agent in a browser-only environment, there's no terminal to run `npx`. Use Cloudflare's one-click deploy instead:
+
+1. **Click [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/minicoursegenerator/edu-role-play-proxy).** OAuths into your Cloudflare account, deploys the proxy Worker. Copy the resulting `https://<name>.workers.dev` URL.
+2. **Add your API key as a Worker secret.** In the Cloudflare dashboard → that Worker → **Settings → Variables and Secrets → Add variable** → name it `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) → paste the key → mark it **Secret (encrypted)** → save.
+3. **Point your bundled HTML at it.** No re-bundle needed — pick one:
+   - Edit `<head>` of the bundled file and add: `<meta name="edu-role-play-proxy" content="https://<your-worker>.workers.dev">`
+   - Or share the file with a query param: `your-roleplay.bundled.html?erp-proxy=https://<your-worker>.workers.dev`
+
+The agent can do step 3 for you — paste the Worker URL into the chat and it will edit the bundled HTML in place.
 
 ## Provider trade-offs
 

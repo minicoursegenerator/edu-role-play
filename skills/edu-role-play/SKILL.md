@@ -43,6 +43,7 @@ Plan:
 - Persona: <name + role of the AI character they'll talk to>
 - Objectives: <comma-separated short list>
 - Difficulty / tone: <if known>
+- Language: <code from §3.5, inferred from how the user is talking to you>
 
 Want me to generate this, or change anything first?
 ```
@@ -80,7 +81,7 @@ Wrap the composition in the standard HTML shell below. The `<style>` block and t
     </style>
   </head>
   <body>
-<edu-role-play id="my-roleplay" runtime-version="0.1.0">
+<edu-role-play id="my-roleplay" runtime-version="0.1.0" locale="en">
   <div class="notice" data-erp-fallback>
     <h2>This role-play isn't bundled yet</h2>
     <p>Open a terminal in this folder and run:</p>
@@ -117,6 +118,16 @@ Wrap the composition in the standard HTML shell below. The `<style>` block and t
   </body>
 </html>
 ```
+
+## 3.5. Language / locale (mandatory)
+
+Set `locale="<code>"` on the root `<edu-role-play>` element to match the language the user is authoring in. This drives the UI chrome (briefing, objectives heading, buttons, debrief modal, system notes) — the persona, scenario, and objectives stay in whatever language you wrote them.
+
+**Detection rule:** pick the locale from the language the user is speaking to you in this session. If they switched to Turkish to request the role-play, set `locale="tr"` even if your reply is in English. When in doubt, ask once: "Should the activity UI be in Turkish or English?"
+
+Supported codes: `en`, `es`, `fr`, `de`, `pt`, `it`, `tr`, `ja`, `zh`, `ar`. Anything else falls back to `en`.
+
+When you write the persona / scenario / objectives in a non-English language, the `locale` attribute MUST match — otherwise the learner sees Turkish content under English headings, which looks broken.
 
 ## 4. Persona design
 
@@ -165,10 +176,30 @@ Each role-play gets its own folder so files don't pile up in the user's working 
    **b. Tweak invitation** — invite the user to iterate with you, e.g.:
    > Try it out and tell me what to change — persona traits, objectives, opening behavior, rubric weights, scenario details. We can keep tweaking together until it feels right.
 
-   **c. Deploy-before-sharing note** — verbatim, on its own paragraph:
-   > This bundle uses a **shared public proxy** for quick testing — it's rate-limited and only meant for iteration. **Before you share this role-play with teammates or learners**, run `npx edu-role-play deploy-proxy` to deploy your own Cloudflare Worker, then add your own `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as a secret on it for stronger model quality, and re-bundle with `--proxy-url https://<your-worker>.workers.dev` (or set `EDU_ROLE_PLAY_PROXY_URL`). Keys never ship inside the HTML.
+   **c. Deploy-before-sharing note** — required, but the *path* depends on whether you have a shell.
 
-Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker, or when they're moving from testing to sharing with learners. There is no option to bake an API key into the HTML — keys never ship in source.
+   Always lead with this sentence verbatim:
+   > This bundle uses a **shared public proxy** for quick testing — it's rate-limited and only meant for iteration. **Before you share this role-play with teammates or learners**, deploy your own Cloudflare Worker so you control the model, the key, and the rate limits. Keys never ship inside the HTML.
+
+   Then pick **exactly one** of the two tracks below.
+
+   **Track A — terminal host (Claude Code, Cursor, Codex, anywhere with `Bash` + `npx`).** Tell the user:
+   > Run `npx edu-role-play deploy-proxy`. It walks through provider choice, runs `wrangler login` if needed, deploys the Worker, and sets your `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as a Worker secret. Then re-bundle with `--proxy-url https://<your-worker>.workers.dev` (or set `EDU_ROLE_PLAY_PROXY_URL`).
+
+   **Track B — web host (claude.ai, or any environment without a shell).** Tell the user, in this exact shape:
+   > 1. Click **Deploy to Cloudflare**: <https://deploy.workers.cloudflare.com/?url=https://github.com/minicoursegenerator/edu-role-play-proxy>. It OAuths into your Cloudflare account and deploys the Worker. Copy the resulting `https://<name>.workers.dev` URL.
+   > 2. In the Cloudflare dashboard → that Worker → **Settings → Variables and Secrets → Add variable** → set `ANTHROPIC_API_KEY` (recommended) or `OPENAI_API_KEY`, **mark it as Secret (encrypted)**.
+   > 3. Paste the Worker URL back to me. I'll edit the bundled HTML to add `<meta name="edu-role-play-proxy" content="https://<your-worker>.workers.dev">` in `<head>` — no re-bundle needed.
+   >
+   > Alternative (no edits): share the file as `your-roleplay.bundled.html?erp-proxy=https://<your-worker>.workers.dev`.
+
+   **Track detection.** Default to Track A if `Bash` and `npx` are available; otherwise Track B. If unsure, ask: "Are you on the web (claude.ai) or in a terminal-capable environment?"
+
+   **Optional polish — Cloudflare MCP connected.** If a Cloudflare Developer Platform MCP connector is available in the session, after the user reports the deploy is done you may use it to: list their Workers, confirm the new Worker exists, and read its URL so the user doesn't have to copy-paste. Do not use the MCP to *create* or *deploy* Workers (the supported operations don't cover deploying arbitrary source) and do not use it to set the API-key secret — both stay user-driven via the Cloudflare UI. This is verification only.
+
+   **Credential boundary (non-negotiable).** Do not enter the user's Cloudflare login or API key on their behalf, even if a connector seems to allow it. Direct them to Cloudflare's own UI — the OAuth deploy button and the dashboard secret form. Reason: credential locality. Every hop a secret takes (chat, agent, script) is a hop where it can leak. Cloudflare's dashboard is the system that will store the secret; that's where the human should type it.
+
+Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker. There is no option to bake an API key into the HTML — keys never ship in source.
 
 ## 9. On-demand references
 

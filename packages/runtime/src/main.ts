@@ -8,6 +8,7 @@ import { createProxyProvider } from "./providers/proxy";
 import { createResultSnapshot, createSessionId } from "./results";
 import { scoreTranscript } from "./scoring";
 import { createScorm12Adapter } from "./scorm";
+import { t } from "./locales";
 import type { ActivityEvent, ChatMessage, Provider, ResultSnapshot, RuntimeConfig } from "./types";
 import { UI } from "./ui";
 import { DEFAULT_MODELS, readUserKey } from "./user-key";
@@ -51,6 +52,33 @@ function readConfig(): RuntimeConfig | null {
   }
 }
 
+// Lets a deployer re-point a bundled HTML at their own Worker without
+// re-running the CLI: ?erp-proxy=https://… wins, then <meta name="edu-role-play-proxy">.
+// Only applied when the baked provider is "proxy".
+function readProxyOverride(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get("erp-proxy");
+    if (fromQuery) return fromQuery;
+  } catch {
+    // ignore (file:// in some sandboxes)
+  }
+  const meta = document.querySelector('meta[name="edu-role-play-proxy"]');
+  const fromMeta = meta?.getAttribute("content");
+  return fromMeta && fromMeta.trim() ? fromMeta.trim() : null;
+}
+
+function applyProxyOverride(baked: RuntimeConfig): RuntimeConfig {
+  if (baked.provider !== "proxy") return baked;
+  const override = readProxyOverride();
+  if (!override) return baked;
+  if (!/^https:\/\//i.test(override)) {
+    console.warn(`[edu-role-play] ignoring non-https proxy override: ${override}`);
+    return baked;
+  }
+  return { ...baked, baseUrl: override };
+}
+
 function effectiveConfig(baked: RuntimeConfig): RuntimeConfig {
   const user = readUserKey();
   if (!user) return baked;
@@ -85,7 +113,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
     console.error("[edu-role-play] no <edu-role-play> element found");
     return;
   }
-  const baked = readConfig();
+  let baked = readConfig();
   if (!baked) {
     root.innerHTML =
       '<div style="font-family:system-ui;padding:16px;border:1px solid #f5c2c7;background:#f8d7da;border-radius:8px;color:#842029">' +
@@ -106,6 +134,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
   }
 
   const comp = readCompositionFromDom(root);
+  baked = applyProxyOverride(baked);
   let provider = createProvider(effectiveConfig(baked));
   let history: ChatMessage[] = [];
   let completedObjectives = new Set<string>();
@@ -203,14 +232,12 @@ export async function mount(host?: HTMLElement): Promise<void> {
         ui.setObjectiveStatus(completed);
         const allMet = comp.objectives.every((o) => completed.has(o.id));
         if (allMet) {
-          ui.addSystemNote(
-            "All objectives appear met. End the conversation when you're ready.",
-          );
+          ui.addSystemNote(t(comp.locale, "allObjectivesMet"));
         }
       }
 
       if (turn >= turnCap) {
-        ui.addSystemNote(`Turn limit (${turnCap}) reached. Wrapping up…`);
+        ui.addSystemNote(t(comp.locale, "turnLimitReached", { n: turnCap }));
         await endSession();
       }
     },
@@ -277,7 +304,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
         return reply.trim();
       } catch (err) {
         record("error", { phase: "hint", message: (err as Error).message });
-        ui.showError(`Hint failed: ${(err as Error).message}`);
+        ui.showError(t(comp.locale, "hintFailed", { message: (err as Error).message }));
         return null;
       }
     },
@@ -314,7 +341,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
     ended = true;
     record("finish", { turn });
     ui.disableInput();
-    ui.addSystemNote("Scoring the conversation…");
+    ui.addSystemNote(t(comp.locale, "scoringConversation"));
     try {
       record("scoring");
       const result = await scoreTranscript(provider, comp, history);

@@ -2,6 +2,8 @@
 
 Bundled role-plays ship with **no API key** in the HTML — they hit a Cloudflare Worker proxy (`POST /v1/chat`) by default, which calls Cloudflare Workers AI through the `env.AI` binding (no key on the server either). Learners can start practicing with zero setup. If a learner prefers to use their own key (to get a stronger model, keep usage off someone else's bill, or avoid rate limits), the runtime supports that.
 
+> Author note: to point a bundle at *your own* deployed proxy without re-bundling, add `<meta name="edu-role-play-proxy" content="https://<your-worker>.workers.dev">` to `<head>` (or append `?erp-proxy=…` to the URL). See [sharing.md](sharing.md).
+
 ## How a learner switches
 
 1. In the footer of the role-play panel, click **Use my own key ▾**.
