@@ -168,52 +168,40 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 2. Write the composition to `<slug>/<slug>.html`.
 3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.html`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
 4. **You** (the agent) run `npx -y edu-role-play bundle <slug>/<slug>.html` to produce the playable HTML in-place. Do not ask the user for an API key — bundling never needs one (keys live on the proxy, not in the HTML). If the environment cannot run `npx` (no shell, no network), fall back to instructing the user to run it themselves and skip section (a) below.
-5. Your final message MUST include all three sections below, in this order, every time. Do not omit any of them, even if the conversation is brief.
+5. Your final message after the first bundle MUST be light and bulleted — no walls of text, no technical detail about proxies, secrets, or runtime internals. Use this exact shape:
 
-   **a. Confirmation that it's bundled and ready to play** — one short line, e.g.:
-   > Bundled. Open `<slug>/<slug>.html` in your browser to start the role-play, or run `npx edu-role-play start <slug>.html` from inside the folder to re-open it later.
-
-   **b. Tweak invitation** — invite the user to iterate with you, e.g.:
-   > Try it out and tell me what to change — persona traits, objectives, opening behavior, rubric weights, scenario details. We can keep tweaking together until it feels right.
-
-   **c. Deploy-before-sharing note** — required, but the *path* depends on whether you have a shell.
-
-   Always lead with this sentence verbatim:
-   > This bundle uses a **shared public proxy** for quick testing — it's rate-limited and only meant for iteration. **Before you share this role-play with teammates or learners**, deploy your own Cloudflare Worker so you control the model, the key, and the rate limits. Keys never ship inside the HTML.
-
-   Then pick **exactly one** of the two tracks below.
-
-   **Track A — terminal host (Claude Code, Cursor, Codex, anywhere with `Bash` + `npx`).** Tell the user:
-   > Run `npx edu-role-play deploy-proxy`. It walks through provider choice, runs `wrangler login` if needed, deploys the Worker, and sets your `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as a Worker secret. Then re-bundle with `--proxy-url https://<your-worker>.workers.dev` (or set `EDU_ROLE_PLAY_PROXY_URL`).
-
-   **Track B — web host (claude.ai, or any environment without a shell).** Tell the user, in this exact shape:
-   > 1. Click **Deploy to Cloudflare**: <https://deploy.workers.cloudflare.com/?url=https://github.com/minicoursegenerator/edu-role-play-proxy>. It OAuths into your Cloudflare account and deploys the Worker. Copy the resulting `https://<name>.workers.dev` URL.
-   > 2. In the Cloudflare dashboard → that Worker → **Settings → Variables and Secrets → Add variable** → set `ANTHROPIC_API_KEY` (recommended) or `OPENAI_API_KEY`, **mark it as Secret (encrypted)**.
-   > 3. Paste the Worker URL back to me. I'll edit the bundled HTML to add `<meta name="edu-role-play-proxy" content="https://<your-worker>.workers.dev">` in `<head>` — no re-bundle needed.
+   > Bundled — open `<slug>/<slug>.html` to try it.
    >
-   > Alternative (no edits): share the file as `your-roleplay.bundled.html?erp-proxy=https://<your-worker>.workers.dev`.
+   > - Tell me what to change if anything feels off (persona, objectives, rubric, scenario).
+   > - When it's good, say the word and I'll set you up with your own API key + a SCORM zip you can upload to your LMS.
+
+   That's it. Do not mention the shared proxy, rate limits, Cloudflare, Workers, secrets, or SCORM mechanics in this first message.
+
+   **When the user says they're happy / ready to ship**, then (and only then) walk them through the deploy + SCORM step in one go.
+
+   **Track A — terminal host (Claude Code, Cursor, Codex, anywhere with `Bash` + `npx`).** Tell the user, briefly:
+   > I'll run `npx edu-role-play deploy-proxy` — it'll ask you to log into Cloudflare and paste your API key, then deploys a private proxy so the role-play uses your own key (no rate limits, no shared infra).
+
+   Run `deploy-proxy` for them. Once it returns a Worker URL, immediately:
+   1. Re-bundle with `--proxy-url https://<their-worker>.workers.dev`.
+   2. Run `npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url https://<their-worker>.workers.dev`.
+   3. Report back in one short message:
+      > Done. Your own key is wired up, and `<slug>/<slug>.scorm.zip` is ready to upload to your LMS (Moodle, Canvas, TalentLMS, SCORM Cloud, etc.).
+
+   **Track B — web host (claude.ai, or any environment without a shell).** Give the user a short numbered list, no extra commentary:
+   > 1. Click **Deploy to Cloudflare**: <https://deploy.workers.cloudflare.com/?url=https://github.com/minicoursegenerator/edu-role-play-proxy>, then copy the `https://<name>.workers.dev` URL it gives you.
+   > 2. In the Cloudflare dashboard → that Worker → **Settings → Variables and Secrets** → add `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as a **Secret**.
+   > 3. Paste the Worker URL back to me.
+
+   When they paste the URL back, edit the bundled HTML to add `<meta name="edu-role-play-proxy" content="https://<their-worker>.workers.dev">` in `<head>`, then tell them how to get the SCORM zip — either by running `npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url <url>` themselves, or (if they have no shell at all) point them at the CLI docs.
 
    **Track detection.** Default to Track A if `Bash` and `npx` are available; otherwise Track B. If unsure, ask: "Are you on the web (claude.ai) or in a terminal-capable environment?"
 
-   **Optional polish — Cloudflare MCP connected.** If a Cloudflare Developer Platform MCP connector is available in the session, after the user reports the deploy is done you may use it to: list their Workers, confirm the new Worker exists, and read its URL so the user doesn't have to copy-paste. Do not use the MCP to *create* or *deploy* Workers (the supported operations don't cover deploying arbitrary source) and do not use it to set the API-key secret — both stay user-driven via the Cloudflare UI. This is verification only.
+   **Optional polish — Cloudflare MCP connected.** If a Cloudflare Developer Platform MCP connector is available, after the user reports the deploy is done you may use it to confirm the Worker exists and read its URL so the user doesn't have to copy-paste. Do not use the MCP to deploy Workers or set secrets — both stay user-driven via the Cloudflare UI.
 
-   **Credential boundary (non-negotiable).** Do not enter the user's Cloudflare login or API key on their behalf, even if a connector seems to allow it. Direct them to Cloudflare's own UI — the OAuth deploy button and the dashboard secret form. Reason: credential locality. Every hop a secret takes (chat, agent, script) is a hop where it can leak. Cloudflare's dashboard is the system that will store the secret; that's where the human should type it.
+   **Credential boundary (non-negotiable).** Do not enter the user's Cloudflare login or API key on their behalf. Direct them to Cloudflare's own UI — the OAuth deploy button and the dashboard secret form. Every hop a secret takes is a hop where it can leak; the dashboard is where the human should type it.
 
 Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker. There is no option to bake an API key into the HTML — keys never ship in source.
-
-   **d. SCORM / LMS packaging — offer it.** Once the role-play feels right and either (Track A) the user's proxy is deployed or (Track B) they've pasted back a Worker URL, ask:
-
-   > Want a SCORM 1.2 zip you can upload to your LMS (Moodle, Canvas, Cornerstone, TalentLMS, SCORM Cloud, etc.)? It reports completion + a 0–100 score back to the gradebook automatically.
-
-   If yes, run:
-
-   ```
-   npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url https://<their-worker>.workers.dev
-   ```
-
-   Output: `<slug>/<slug>.scorm.zip`. Tell the user to upload that zip to their LMS as a SCORM 1.2 package — no extra config needed; the runtime detects `window.API` on launch and reports `cmi.core.lesson_status` + `cmi.core.score.*` on finish.
-
-   **Pass `--proxy-url` only when the user has their own Worker.** Without it the SCORM zip points at the shared public proxy, which is rate-limited and not suitable for real learners — warn the user and prefer to deploy the proxy first. Do not offer SCORM before the user has at least tried the bundle in a browser; SCORM packaging is the "ready to ship to learners" step, not part of the iteration loop.
 
 ## 9. On-demand references
 
