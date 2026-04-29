@@ -170,7 +170,7 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 4. **You** (the agent) run `npx -y edu-role-play bundle <slug>/<slug>.html` to produce the playable HTML in-place. Do not ask the user for an API key — bundling never needs one (keys live on the proxy, not in the HTML). If the environment cannot run `npx` (no shell, no network), fall back to instructing the user to run it themselves and skip section (a) below.
 5. Your final message after the first bundle MUST be light and bulleted — no walls of text, no technical detail about proxies, secrets, or runtime internals. Use this exact shape:
 
-   > Bundled — open `<slug>/<slug>.html` to try it.
+   > Bundled. Run `npx edu-role-play start <slug>/<slug>.bundled.html` to try it.
    >
    > - Tell me what to change if anything feels off (persona, objectives, rubric, scenario).
    > - When it's good, say the word and I'll set you up with your own API key + a SCORM zip you can upload to your LMS.
