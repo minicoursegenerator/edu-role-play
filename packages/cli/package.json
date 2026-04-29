@@ -1,6 +1,6 @@
 {
   "name": "edu-role-play",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "CLI for edu-role-play: init, preview, lint, bundle.",
   "license": "MIT",
   "type": "module",
