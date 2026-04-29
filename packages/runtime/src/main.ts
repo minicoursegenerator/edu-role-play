@@ -12,6 +12,35 @@ import type { ActivityEvent, ChatMessage, Provider, ResultSnapshot, RuntimeConfi
 import { UI } from "./ui";
 import { DEFAULT_MODELS, readUserKey } from "./user-key";
 
+function looksLikeNetworkBlock(err: unknown): boolean {
+  if (!(err instanceof TypeError)) return false;
+  const msg = err.message || "";
+  return /failed to fetch|networkerror|load failed/i.test(msg);
+}
+
+function inSandboxedFrame(): boolean {
+  try {
+    if (window.top === window.self) return false;
+  } catch {
+    return true;
+  }
+  try {
+    return window.location.origin === "null" || document.location.ancestorOrigins?.length > 0;
+  } catch {
+    return true;
+  }
+}
+
+function explainStartError(err: unknown): string {
+  if (looksLikeNetworkBlock(err)) {
+    if (inSandboxedFrame()) {
+      return "Could not reach the model proxy from this preview frame. Download the HTML and open it in your browser — preview sandboxes block outbound network calls.";
+    }
+    return "Could not reach the model proxy. Check your internet connection, or if the bundled proxy URL is wrong, re-bundle with --proxy-url <your-worker>.";
+  }
+  return `Could not start: ${(err as Error).message}`;
+}
+
 function readConfig(): RuntimeConfig | null {
   const tag = document.getElementById("edu-role-play-config");
   if (!tag || !tag.textContent) return null;
@@ -140,7 +169,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
       record("roleplay_start");
     } catch (err) {
       ui.showTyping(false);
-      ui.showError(`Could not start: ${(err as Error).message}`);
+      ui.showError(explainStartError(err));
     }
   }
 

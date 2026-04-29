@@ -4,11 +4,6 @@
   "private": true,
   "description": "Generate interactive AI role-play training activities as self-contained HTML. Agent-first authoring via Agent Skills.",
   "license": "MIT",
-  "scripts": {
-    "site:dev": "npm --workspace @edu-role-play/site run dev --",
-    "site:build": "npm --workspace @edu-role-play/site run build",
-    "site:preview": "npm --workspace @edu-role-play/site run preview --"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/minicoursegenerator/edu-role-play.git"

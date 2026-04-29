@@ -36,7 +36,7 @@ git clone https://github.com/minicoursegenerator/edu-role-play
 cd edu-role-play && npm install && npm run build
 ```
 
-Then use `npx edu-role-play init|lint|bundle|preview` directly.
+Then use the CLI directly: `npx edu-role-play <command>`. See [The CLI flow](#the-cli-flow) below.
 
 ## Quick start
 
@@ -71,7 +71,7 @@ The agent scaffolds the composition, validates it, and bundles it into a single 
 A role-play composition is a single HTML file with custom elements declaring the persona, scenario, objectives, and rubric. The runtime (inlined at bundle time) drives a chat loop against a configured LLM, detects objective completion, and scores the full transcript at the end.
 
 ```html
-<edu-role-play id="sales-pitch-skeptical-buyer" runtime-version="0.1.0">
+<edu-role-play id="sales-pitch-skeptical-buyer" runtime-version="0.1.13">
   <edu-persona name="Sarah Chen" role="VP of Operations">
     <goals>Reduce vendor count by 30% by Q4...</goals>
     <constraints>Budget locked until Q3...</constraints>
@@ -95,15 +95,45 @@ A role-play composition is a single HTML file with custom elements declaring the
 </edu-role-play>
 ```
 
+## The CLI flow
+
+The full author → share loop, agent or hand-driven:
+
+```bash
+# 1. Scaffold a composition from an archetype (or start blank)
+npx edu-role-play init my-roleplay --archetype skeptical-buyer
+
+# 2. Validate it against the DNA rules
+npx edu-role-play lint my-roleplay.html
+
+# 3. Iterate locally — runtime inlined, no auto-open
+npx edu-role-play preview my-roleplay.html
+
+# 4. Bundle into a single self-contained HTML
+npx edu-role-play bundle my-roleplay.html
+
+# 5. Open the bundled HTML in your browser to try it
+npx edu-role-play start my-roleplay.html
+
+# 6. (Optional) Package as SCORM 1.2 for an LMS
+npx edu-role-play scorm my-roleplay.html
+```
+
+### Deploy your own proxy (for sharing)
+
+The shared public proxy is rate-limited and fine for iteration. Before sharing bundles with learners, deploy your own Cloudflare Worker:
+
+```bash
+npx edu-role-play deploy-proxy
+```
+
+This guided command stages the proxy-worker template, prompts for provider (`workers-ai` | `anthropic` | `openai`) and key, and runs `wrangler deploy` for you. It then writes the resulting URL into your user config so subsequent `bundle`/`start`/`scorm` calls default to it. Override per-bundle with `--proxy-url <url>` or `EDU_ROLE_PLAY_PROXY_URL`.
+
 ## Inference
 
-Bundled role-plays call a self-hosted Cloudflare Worker proxy (`POST {proxy}/v1/chat`) — no API key ships in the HTML. The Worker calls Cloudflare Workers AI through the `env.AI` binding, so there's no token or account id to manage on the server either. Deploy your own with [`packages/proxy-worker`](packages/proxy-worker/) and point bundles at it via `--proxy-url <url>` or `EDU_ROLE_PLAY_PROXY_URL`.
+Bundled role-plays call a Cloudflare Worker proxy (`POST {proxy}/v1/chat`) — no API key ships in the HTML. The Worker can call Cloudflare Workers AI (via the `env.AI` binding, no key needed), Anthropic, or OpenAI. Source lives in [`packages/proxy-worker`](packages/proxy-worker/); the easiest deploy path is `edu-role-play deploy-proxy` (above).
 
 Learners can optionally switch to their own Cloudflare, OpenAI, or Anthropic key at runtime via the footer — stored in `localStorage`, never in the HTML source. See [docs/byo-key.md](docs/byo-key.md).
-
-## Status
-
-Early development. See [docs/](docs/) for current capabilities.
 
 ## Maintainers
 

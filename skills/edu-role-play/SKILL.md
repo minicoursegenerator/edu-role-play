@@ -156,14 +156,11 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 1. Pick a short kebab-case slug (e.g. `gdpr-sar-audit`). Create the folder: the composition file path is `<slug>/<slug>.html`.
 2. Write the composition to `<slug>/<slug>.html`.
 3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.html`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
-4. **Do not bundle yourself.** Do not ask the user for an API key.
+4. **You** (the agent) run `npx -y edu-role-play bundle <slug>/<slug>.html` to produce the playable HTML in-place. Do not ask the user for an API key — bundling never needs one (keys live on the proxy, not in the HTML). If the environment cannot run `npx` (no shell, no network), fall back to instructing the user to run it themselves and skip section (a) below.
 5. Your final message MUST include all three sections below, in this order, every time. Do not omit any of them, even if the conversation is brief.
 
-   **a. Run command** — these lines verbatim (substituting the slug):
-   ```
-   cd <slug>
-   npx edu-role-play start <slug>.html
-   ```
+   **a. Confirmation that it's bundled and ready to play** — one short line, e.g.:
+   > Bundled. Open `<slug>/<slug>.html` in your browser to start the role-play, or run `npx edu-role-play start <slug>.html` from inside the folder to re-open it later.
 
    **b. Tweak invitation** — invite the user to iterate with you, e.g.:
    > Try it out and tell me what to change — persona traits, objectives, opening behavior, rubric weights, scenario details. We can keep tweaking together until it feels right.
