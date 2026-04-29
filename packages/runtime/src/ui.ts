@@ -8,6 +8,7 @@ import type {
   UserKeyConfig,
 } from "./types";
 import { DEFAULT_MODELS, clearUserKey, readUserKey, writeUserKey } from "./user-key";
+import { t } from "./locales";
 
 interface SpeechRecognitionAlt {
   continuous: boolean;
@@ -20,7 +21,6 @@ interface SpeechRecognitionAlt {
   stop(): void;
 }
 type SpeechRecognitionCtor = new () => SpeechRecognitionAlt;
-const TTS_KEY = "edu-role-play:tts";
 
 const CSS = `
 :host { all: initial; display: block; height: 100vh; overflow: hidden; }
@@ -418,23 +418,6 @@ interface MsgRecord {
   tip?: string;
 }
 
-function readStored<T>(key: string, fallback: T): T {
-  try {
-    const s = localStorage.getItem(key);
-    if (s === null) return fallback;
-    return JSON.parse(s) as T;
-  } catch {
-    return fallback;
-  }
-}
-function writeStored<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* ignore */
-  }
-}
-
 function avatarColor(name: string): string {
   const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   return `oklch(72% 0.15 ${hue})`;
@@ -451,8 +434,8 @@ function initials(name: string): string {
 function fmtTime(s: number): string {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
-function formatScenarioBody(raw: string): string {
-  const text = (raw || "Practice conversation").trim();
+function formatScenarioBody(raw: string, fallback: string): string {
+  const text = (raw || fallback).trim();
   const sentences = text
     .split(/(?<=[.!?])\s+(?=[A-Z0-9])/g)
     .map((s) => s.trim())
@@ -504,11 +487,15 @@ export class UI {
   private hintNode: HTMLElement | null = null;
   private byoPanelOpen = false;
 
-  constructor(host: HTMLElement, comp: CompositionData, handlers: UIHandlers) {
+  constructor(
+    host: HTMLElement,
+    comp: CompositionData,
+    handlers: UIHandlers,
+  ) {
     this.host = host;
     this.comp = comp;
     this.handlers = handlers;
-    this.ttsEnabled = readStored<boolean>(TTS_KEY, true);
+    this.ttsEnabled = false;
 
     host.innerHTML = "";
     this.root = host.attachShadow({ mode: "open" });
@@ -551,19 +538,28 @@ export class UI {
 
   showRestartAction(): void {
     this.ended = true;
+    const scoringMsg = this.tr("scoringConversation");
+    const scoredMsg = this.tr("conversationScored");
     this.messages = this.messages.map((m) =>
-      m.role === "system-note" && m.content === "Scoring the conversation…"
-        ? { ...m, content: "Conversation scored." }
+      m.role === "system-note" && m.content === scoringMsg
+        ? { ...m, content: scoredMsg }
         : m,
     );
     this.renderMessages();
     const finish = this.root.querySelector(".finish-btn") as HTMLButtonElement | null;
     if (finish) {
       finish.disabled = false;
-      finish.innerHTML = "Restart";
-      finish.title = "Restart";
+      finish.innerHTML = this.tr("restart");
+      finish.title = this.tr("restart");
     }
     this.renderInput();
+  }
+
+  private tr(
+    key: Parameters<typeof t>[1],
+    params?: Parameters<typeof t>[2],
+  ): string {
+    return t(this.comp.locale, key, params);
   }
 
   setResultsReady(ready: boolean): void {
@@ -626,7 +622,7 @@ export class UI {
   }
 
   showError(message: string): void {
-    this.addSystemNote(`Error: ${message}`);
+    this.addSystemNote(this.tr("errorPrefix", { message }));
   }
 
   setObjectiveStatus(done: Set<string>): void {
@@ -650,8 +646,8 @@ export class UI {
     const finish = this.root.querySelector(".finish-btn") as HTMLButtonElement | null;
     if (finish) {
       finish.disabled = false;
-      finish.innerHTML = "Finish";
-      finish.title = "Finish & debrief";
+      finish.innerHTML = this.tr("finish");
+      finish.title = this.tr("finishAndDebrief");
     }
     this.renderMessages();
     this.renderObjectives();
@@ -662,23 +658,31 @@ export class UI {
   showBriefing(): Promise<void> {
     return new Promise<void>((resolve) => {
       const p = this.comp.persona;
+      const partnerFallback = this.tr("practicePartner");
       const avatarHtml = p.avatar
-        ? `<img src="${escapeHtml(p.avatar)}" alt="${escapeHtml(p.name || "Practice partner")}" style="width:100%;height:100%;object-fit:cover;display:block" />`
+        ? `<img src="${escapeHtml(p.avatar)}" alt="${escapeHtml(p.name || partnerFallback)}" style="width:100%;height:100%;object-fit:cover;display:block" />`
         : `<div class="brief-avatar-initials" style="background:${avatarColor(p.name || "?")}">${escapeHtml(initials(p.name || "?"))}</div>`;
       const turnLimit = this.comp.termination.turnLimit ?? 20;
       const minutes = Math.max(5, Math.round(turnLimit / 2));
-      const footerLine = `~${minutes} min session · ${escapeHtml(this.comp.difficulty)} difficulty`;
+      const difficultyLabel = this.tr(
+        this.comp.difficulty === "easy"
+          ? "difficultyEasy"
+          : this.comp.difficulty === "tough"
+            ? "difficultyTough"
+            : "difficultyRealistic",
+      );
+      const footerLine = escapeHtml(this.tr("briefingFooter", { minutes, difficulty: difficultyLabel }));
       const targetIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="oklch(52% 0.20 255)" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="oklch(52% 0.20 255)"/></svg>`;
       const objectivesBlockHtml = this.comp.objectives.length === 0
         ? ""
         : this.comp.objectives.length === 1
           ? `<div class="brief-obj-row">
                <span class="brief-obj-icon">${targetIcon}</span>
-               <span><b>Your objective:</b> ${escapeHtml(this.comp.objectives[0].text || this.comp.objectives[0].id)}</span>
+               <span><b>${escapeHtml(this.tr("yourObjective"))}</b> ${escapeHtml(this.comp.objectives[0].text || this.comp.objectives[0].id)}</span>
              </div>`
           : `<div class="brief-obj-row">
                <span class="brief-obj-icon">${targetIcon}</span>
-               <span><b>Your objectives</b></span>
+               <span><b>${escapeHtml(this.tr("yourObjectives"))}</b></span>
              </div>
              <ul class="brief-obj-list">${this.comp.objectives
                .map((o) => `<li>${escapeHtml(o.text || o.id)}</li>`)
@@ -688,7 +692,7 @@ export class UI {
       backdrop.innerHTML = `
         <div class="modal-card brief-card">
           <div class="brief-head">
-            <div class="modal-eyebrow">Role-play briefing</div>
+            <div class="modal-eyebrow">${escapeHtml(this.tr("rolePlayBriefing"))}</div>
           </div>
           <div class="brief-persona-row">
             <div class="brief-avatar">${avatarHtml}</div>
@@ -699,15 +703,15 @@ export class UI {
           </div>
           <div class="brief-divider"></div>
           <div class="brief-scenario-block">
-            <div class="brief-label">Scenario</div>
-            <div class="scenario-hero-card">${formatScenarioBody(this.comp.scenario)}</div>
+            <div class="brief-label">${escapeHtml(this.tr("scenario"))}</div>
+            <div class="scenario-hero-card">${formatScenarioBody(this.comp.scenario, this.tr("practiceConversation"))}</div>
           </div>
           ${
             objectivesBlockHtml
               ? `<div class="brief-divider"></div><div class="brief-objectives-block">${objectivesBlockHtml}</div>`
               : ""
           }
-          <button class="close-btn brief-ok-btn">Start role-play</button>
+          <button class="close-btn brief-ok-btn">${escapeHtml(this.tr("startRolePlay"))}</button>
           <div class="brief-footer">${footerLine}</div>
         </div>
       `;
@@ -735,17 +739,17 @@ export class UI {
       <div class="modal-card">
         <div class="modal-head">
           <div>
-            <div class="modal-eyebrow">Session Complete</div>
-            <h2 class="modal-title">Your Debrief</h2>
+            <div class="modal-eyebrow">${escapeHtml(this.tr("sessionComplete"))}</div>
+            <h2 class="modal-title">${escapeHtml(this.tr("yourDebrief"))}</h2>
           </div>
-          <button class="modal-close" title="Close">${ICONS.close}</button>
+          <button class="modal-close" title="${escapeAttr(this.tr("close"))}">${ICONS.close}</button>
         </div>
         <div class="score-row">
           <div class="score-num ${grade}">${out10}<span>/10</span></div>
           <div class="stars">${Array.from({ length: 10 }, (_, i) =>
             i < out10 ? ICONS.starFilled : ICONS.starEmpty,
           ).join("")}</div>
-          <div style="margin-top:8px;font-size:12.5px;color:oklch(55% 0.01 255)">Total ${result.total} / ${result.maxTotal}</div>
+          <div style="margin-top:8px;font-size:12.5px;color:oklch(55% 0.01 255)">${escapeHtml(this.tr("totalScore", { score: result.total, max: result.maxTotal }))}</div>
         </div>
         <div class="summary">${escapeHtml(result.summary)}</div>
         ${result.perObjective
@@ -753,12 +757,12 @@ export class UI {
             (o) => `
           <div class="per-obj">
             <h4>${escapeHtml(this.objectiveLabel(o.id))}</h4>
-            <div class="sc">Score ${o.score} / ${o.maxScore}</div>
+            <div class="sc">${escapeHtml(this.tr("totalScore", { score: o.score, max: o.maxScore }))}</div>
             <div class="tip">${escapeHtml(o.improvement)}</div>
           </div>`,
           )
           .join("")}
-        <button class="close-btn">Close & Continue</button>
+        <button class="close-btn">${escapeHtml(this.tr("closeAndContinue"))}</button>
       </div>
     `;
     const close = () => {
@@ -804,7 +808,7 @@ export class UI {
     });
     this.root.querySelectorAll(".msg-count").forEach((el) => {
       const n = this.messages.filter((m) => m.role !== "system-note").length;
-      (el as HTMLElement).textContent = `${n} message${n === 1 ? "" : "s"}`;
+      (el as HTMLElement).textContent = this.tr(n === 1 ? "messageOne" : "messageOther", { n });
     });
   }
 
@@ -884,7 +888,7 @@ export class UI {
     overlay.className = "hint-toast";
     overlay.innerHTML = `<span style="font-size:16px;flex-shrink:0">💭</span><span>${escapeHtml(
       text,
-    )}</span><button title="Dismiss">${ICONS.close}</button>`;
+    )}</span><button title="${escapeAttr(this.tr("dismissHint"))}">${ICONS.close}</button>`;
     const close = () => {
       overlay.remove();
       this.hintNode = null;
@@ -931,7 +935,7 @@ export class UI {
     const bar = document.createElement("div");
     bar.className = "toolbar";
     const p = this.comp.persona;
-    const whoName = p.name || "Practice partner";
+    const whoName = p.name || this.tr("practicePartner");
     const sub = p.role || "";
     bar.innerHTML = `
       <div class="toolbar-who">
@@ -943,15 +947,12 @@ export class UI {
       </div>
       <div class="timer-box">${ICONS.timer}<span class="timer-value">${fmtTime(this.seconds)}</span></div>
       <div style="display:flex;gap:4px;align-items:center">
-        <button class="tbtn tts-btn" title="${this.ttsEnabled ? "Mute" : "Unmute"} voice">${
-          this.ttsEnabled ? ICONS.vol : ICONS.volOff
-        }</button>
-        <button class="tbtn restart-btn" title="Restart">${ICONS.restart}</button>
-        <button class="tbtn export-btn" title="Download results" disabled>${ICONS.exp}</button>
+        <button class="tbtn restart-btn" title="${escapeAttr(this.tr("restart"))}">${ICONS.restart}</button>
+        <button class="tbtn export-btn" title="${escapeAttr(this.tr("downloadResults"))}" disabled>${ICONS.exp}</button>
         <div class="byo-wrap">
-          <button class="tbtn byo-btn" title="Use my own API key">${ICONS.key}</button>
+          <button class="tbtn byo-btn" title="${escapeAttr(this.tr("useMyApiKey"))}">${ICONS.key}</button>
         </div>
-        <button class="finish-btn" title="${this.ended ? "Restart" : "Finish & debrief"}">${this.ended ? "Restart" : "Finish"}</button>
+        <button class="finish-btn" title="${escapeAttr(this.tr(this.ended ? "restart" : "finishAndDebrief"))}">${escapeHtml(this.tr(this.ended ? "restart" : "finish"))}</button>
       </div>
     `;
     this.wireToolbar(bar);
@@ -959,14 +960,6 @@ export class UI {
   }
 
   private wireToolbar(bar: HTMLElement): void {
-    bar.querySelector(".tts-btn")!.addEventListener("click", () => {
-      this.ttsEnabled = !this.ttsEnabled;
-      writeStored(TTS_KEY, this.ttsEnabled);
-      if (!this.ttsEnabled) window.speechSynthesis?.cancel();
-      const b = bar.querySelector(".tts-btn")!;
-      b.innerHTML = this.ttsEnabled ? ICONS.vol : ICONS.volOff;
-      (b as HTMLElement).title = `${this.ttsEnabled ? "Mute" : "Unmute"} voice`;
-    });
     bar.querySelector(".restart-btn")!.addEventListener("click", () => {
       void this.handlers.onRestart();
     });
@@ -979,7 +972,7 @@ export class UI {
       }
       if (this.messages.filter((m) => m.role !== "system-note").length < 2) return;
       finish.disabled = true;
-      finish.innerHTML = `<span class="spinner white"></span> Scoring…`;
+      finish.innerHTML = `<span class="spinner white"></span> ${escapeHtml(this.tr("scoringEllipsis"))}`;
       void this.handlers.onEnd();
     });
     bar.querySelector(".byo-btn")!.addEventListener("click", (e) => {
@@ -1014,10 +1007,12 @@ export class UI {
     const panel = document.createElement("div");
     panel.className = "byo-panel open";
     panel.innerHTML = `
-      <div class="byo-status">${
-        stored ? `Using your ${PROVIDER_LABELS[stored.provider]} key` : "Using the bundled key"
-      }</div>
-      <label>Provider</label>
+      <div class="byo-status">${escapeHtml(
+        stored
+          ? this.tr("usingYourKey", { provider: PROVIDER_LABELS[stored.provider] })
+          : this.tr("usingBundledKey"),
+      )}</div>
+      <label>${escapeHtml(this.tr("providerLabel"))}</label>
       <select class="byo-provider">
         ${(["cloudflare", "openai", "anthropic"] as ProviderId[])
           .map(
@@ -1026,19 +1021,19 @@ export class UI {
           )
           .join("")}
       </select>
-      <label>API key</label>
+      <label>${escapeHtml(this.tr("apiKeyLabel"))}</label>
       <input class="byo-key" type="password" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.apiKey ?? "")}" />
       <div class="byo-acct-row">
-        <label>Cloudflare account ID</label>
+        <label>${escapeHtml(this.tr("cloudflareAccountIdLabel"))}</label>
         <input class="byo-acct" type="text" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.accountId ?? "")}" />
       </div>
-      <label>Model (optional)</label>
+      <label>${escapeHtml(this.tr("modelOptionalLabel"))}</label>
       <input class="byo-model" type="text" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.model ?? "")}" />
       <div class="row-buttons">
-        <button class="save">Save</button>
-        <button class="clear">Clear</button>
+        <button class="save">${escapeHtml(this.tr("saveBtn"))}</button>
+        <button class="clear">${escapeHtml(this.tr("clearBtn"))}</button>
       </div>
-      <div class="hint">Stored in this browser only. Overrides the bundled key for this session.</div>
+      <div class="hint">${escapeHtml(this.tr("byoHint"))}</div>
     `;
     const providerSel = panel.querySelector(".byo-provider") as HTMLSelectElement;
     const acctRow = panel.querySelector(".byo-acct-row") as HTMLElement;
@@ -1058,11 +1053,11 @@ export class UI {
       const accountId = (panel.querySelector(".byo-acct") as HTMLInputElement).value.trim();
       const model = (modelInput.value || "").trim();
       if (!apiKey) {
-        this.addSystemNote("API key is required.");
+        this.addSystemNote(this.tr("apiKeyRequired"));
         return;
       }
       if (provider === "cloudflare" && !accountId) {
-        this.addSystemNote("Cloudflare account ID is required.");
+        this.addSystemNote(this.tr("accountIdRequired"));
         return;
       }
       const cfg: UserKeyConfig = {
@@ -1075,14 +1070,14 @@ export class UI {
       panel.remove();
       this.byoPanelOpen = false;
       this.handlers.onUserKeyChange();
-      this.addSystemNote(`Now using your ${PROVIDER_LABELS[provider]} key.`);
+      this.addSystemNote(this.tr("nowUsingYourKey", { provider: PROVIDER_LABELS[provider] }));
     });
     panel.querySelector(".clear")!.addEventListener("click", () => {
       clearUserKey();
       panel.remove();
       this.byoPanelOpen = false;
       this.handlers.onUserKeyChange();
-      this.addSystemNote("Cleared your key; using the bundled key.");
+      this.addSystemNote(this.tr("clearedYourKey"));
     });
     return panel;
   }
@@ -1118,15 +1113,15 @@ export class UI {
   private renderSidebar(side: HTMLElement): void {
     side.innerHTML = `
       <div>
-        <h5>Scenario</h5>
-        <div class="scenario-card">🎯 ${escapeHtml(this.comp.scenario || "Practice conversation")}</div>
+        <h5>${escapeHtml(this.tr("scenario"))}</h5>
+        <div class="scenario-card">🎯 ${escapeHtml(this.comp.scenario || this.tr("practiceConversation"))}</div>
       </div>
 
       <div>
-        <h5>Objectives</h5>
+        <h5>${escapeHtml(this.tr("objectives"))}</h5>
         <div class="objective-list" data-objectives="1"></div>
         <div style="margin-top:7px;font-size:11.5px;color:oklch(58% 0.01 255);line-height:1.5">
-          Your debrief score reflects how well you hit these.
+          ${escapeHtml(this.tr("debriefHelper"))}
         </div>
       </div>
     `;
@@ -1137,7 +1132,7 @@ export class UI {
     const host = this.root.querySelector("[data-objectives]") as HTMLElement | null;
     if (!host) return;
     if (this.comp.objectives.length === 0) {
-      host.innerHTML = `<div style="font-size:12.5px;color:oklch(60% 0.01 255)">No explicit objectives set.</div>`;
+      host.innerHTML = `<div style="font-size:12.5px;color:oklch(60% 0.01 255)">${escapeHtml(this.tr("noObjectives"))}</div>`;
       return;
     }
     host.innerHTML = this.comp.objectives
@@ -1156,12 +1151,11 @@ export class UI {
     bar.className = "input-bar";
     bar.innerHTML = `
       <div class="input-inner${wide ? " wide" : ""}">
-        <button class="icon-btn hint-btn" title="Get a hint">${ICONS.hint}</button>
+        <button class="icon-btn hint-btn" title="${escapeAttr(this.tr("getHint"))}">${ICONS.hint}</button>
         <div class="input-pill">
-          <textarea rows="1" placeholder="Type your message…"></textarea>
-          ${this.speechSupported() ? `<button class="mic-btn" title="Voice input">${ICONS.mic}</button>` : ""}
+          <textarea rows="1" placeholder="${escapeAttr(this.tr("typeMessage"))}"></textarea>
         </div>
-        <button class="send-btn" title="Send">${ICONS.send}</button>
+        <button class="send-btn" title="${escapeAttr(this.tr("send"))}">${ICONS.send}</button>
       </div>
     `;
     const ta = bar.querySelector("textarea") as HTMLTextAreaElement;
@@ -1198,7 +1192,11 @@ export class UI {
     const exportBtn = this.root.querySelector(".export-btn") as HTMLButtonElement | null;
     if (ta) {
       ta.disabled = this.busy || this.ended;
-      ta.placeholder = this.listening ? "Listening…" : this.ended ? "Session ended" : "Type your message…";
+      ta.placeholder = this.listening
+        ? this.tr("listening")
+        : this.ended
+          ? this.tr("sessionEnded")
+          : this.tr("typeMessage");
     }
     if (sendBtn) {
       const has = (ta?.value.trim().length ?? 0) > 0;
@@ -1223,7 +1221,7 @@ export class UI {
         }
         const isUser = m.role === "user";
         const tip = m.tip
-          ? `<div class="tip-inline"><b>💡 Tip:</b> ${escapeHtml(m.tip)}</div>`
+          ? `<div class="tip-inline"><b>💡 ${escapeHtml(this.tr("tipLabel"))}:</b> ${escapeHtml(m.tip)}</div>`
           : "";
         return `
           <div class="msg-row ${isUser ? "user" : "assistant"}">
@@ -1247,7 +1245,7 @@ export class UI {
     const existing = log.querySelector(".typing-row");
     if (this.busy && !this.ended) {
       if (existing) return;
-      const personaName = this.comp.persona.name || "Practice partner";
+      const personaName = this.comp.persona.name || this.tr("practicePartner");
       const row = document.createElement("div");
       row.className = "msg-row assistant typing-row";
       row.innerHTML = `

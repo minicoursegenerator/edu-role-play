@@ -1,3 +1,4 @@
+import { normalizeLocale } from "./locales";
 import type { CompositionData, Difficulty } from "./types";
 
 const DIFFICULTIES: Difficulty[] = ["easy", "realistic", "tough"];
@@ -57,5 +58,6 @@ export function readCompositionFromDom(root: Element): CompositionData {
       manualEnd: (termEl ? childText(termEl, "manual-end") : "false").toLowerCase() === "true",
     },
     difficulty: readDifficulty(root),
+    locale: normalizeLocale(root.getAttribute("locale") ?? root.getAttribute("lang")),
   };
 }

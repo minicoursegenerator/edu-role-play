@@ -71,6 +71,8 @@ export interface CompositionData {
   rubric: CriterionData[];
   termination: TerminationData;
   difficulty: Difficulty;
+  /** BCP-47-ish base code, e.g. "en", "tr". Drives UI chrome translations. */
+  locale: string;
 }
 
 export interface ChatMessage {

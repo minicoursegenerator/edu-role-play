@@ -14,4 +14,5 @@ coverage/
 .claude/
 skills-lock.json
 compositions/*.bundled.html
+compositions/*.scorm.zip
 FEEDBACK1.md

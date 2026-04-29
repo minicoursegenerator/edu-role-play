@@ -123,5 +123,7 @@ export function bundleCommand(file: string, opts: BundleOptions): number {
   console.log(`  open ${rel}`);
   console.log("Or let the CLI open it for you:");
   console.log(`  npx edu-role-play start ${rel}`);
+  console.log("Or package for your LMS as a SCORM 1.2 zip:");
+  console.log(`  npx edu-role-play scorm ${rel}`);
   return 0;
 }

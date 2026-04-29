@@ -201,6 +201,20 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 
 Only suggest `--proxy-url <…>` if the user *explicitly* asks to point at a different Worker. There is no option to bake an API key into the HTML — keys never ship in source.
 
+   **d. SCORM / LMS packaging — offer it.** Once the role-play feels right and either (Track A) the user's proxy is deployed or (Track B) they've pasted back a Worker URL, ask:
+
+   > Want a SCORM 1.2 zip you can upload to your LMS (Moodle, Canvas, Cornerstone, TalentLMS, SCORM Cloud, etc.)? It reports completion + a 0–100 score back to the gradebook automatically.
+
+   If yes, run:
+
+   ```
+   npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url https://<their-worker>.workers.dev
+   ```
+
+   Output: `<slug>/<slug>.scorm.zip`. Tell the user to upload that zip to their LMS as a SCORM 1.2 package — no extra config needed; the runtime detects `window.API` on launch and reports `cmi.core.lesson_status` + `cmi.core.score.*` on finish.
+
+   **Pass `--proxy-url` only when the user has their own Worker.** Without it the SCORM zip points at the shared public proxy, which is rate-limited and not suitable for real learners — warn the user and prefer to deploy the proxy first. Do not offer SCORM before the user has at least tried the bundle in a browser; SCORM packaging is the "ready to ship to learners" step, not part of the iteration loop.
+
 ## 9. On-demand references
 
 Load only when needed:
@@ -210,6 +224,7 @@ Load only when needed:
 - [rubric-design.md](rubric-design.md) — observable rubrics and weights
 - [objective-patterns.md](objective-patterns.md) — objective phrasing patterns
 - [cli-reference.md](cli-reference.md) — `edu-role-play` CLI flags
+- [../../docs/scorm.md](../../docs/scorm.md) — what the SCORM 1.2 runtime reports to the LMS (cmi.* fields, suspend_data shape, limitations)
 
 ## Privacy note to surface to the user
 
