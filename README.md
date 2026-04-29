@@ -133,8 +133,6 @@ This guided command stages the proxy-worker template, prompts for provider (`wor
 
 Bundled role-plays call a Cloudflare Worker proxy (`POST {proxy}/v1/chat`) — no API key ships in the HTML. The Worker can call Cloudflare Workers AI (via the `env.AI` binding, no key needed), Anthropic, or OpenAI. Source lives in [`packages/proxy-worker`](packages/proxy-worker/); the easiest deploy path is `edu-role-play deploy-proxy` (above).
 
-Learners can optionally switch to their own Cloudflare, OpenAI, or Anthropic key at runtime via the footer — stored in `localStorage`, never in the HTML source. See [docs/byo-key.md](docs/byo-key.md).
-
 ## Maintainers
 
 Release checklist (lockstep-version the 3 npm packages): [docs/publishing.md](docs/publishing.md).

@@ -2,12 +2,9 @@ import type {
   ChatMessage,
   CompositionData,
   Difficulty,
-  ProviderId,
   ResultSnapshot,
   ScoreResult,
-  UserKeyConfig,
 } from "./types";
-import { DEFAULT_MODELS, clearUserKey, readUserKey, writeUserKey } from "./user-key";
 import { t } from "./locales";
 
 interface SpeechRecognitionAlt {
@@ -353,38 +350,8 @@ textarea { font: inherit; color: inherit; }
   font-size: 12.5px; color: oklch(58% 0.01 255);
 }
 
-/* BYO panel */
-.byo-wrap { position: relative; }
-.byo-panel {
-  position: absolute; top: 38px; right: 0; z-index: 20;
-  background: white; border: 1px solid oklch(92% 0.006 240);
-  border-radius: 12px; padding: 14px; width: 280px;
-  box-shadow: 0 12px 32px oklch(0% 0 0 / 0.12);
-  display: none;
-}
-.byo-panel.open { display: block; }
-.byo-panel label { display: block; font-size: 11px; color: oklch(50% 0.01 255); margin: 8px 0 3px; font-weight: 600; }
-.byo-panel select, .byo-panel input {
-  font: inherit; width: 100%; padding: 6px 8px; border: 1px solid oklch(88% 0.008 240);
-  border-radius: 8px; background: oklch(98.5% 0.004 240);
-}
-.byo-panel .row-buttons { display: flex; gap: 8px; margin-top: 10px; }
-.byo-panel .row-buttons button {
-  padding: 7px 12px; font-size: 12.5px; border-radius: 8px; font-weight: 600;
-}
-.byo-panel .save { background: oklch(52% 0.20 255); color: white; }
-.byo-panel .clear { background: oklch(97% 0.006 240); color: oklch(40% 0.01 255); border: 1px solid oklch(90% 0.006 240); }
-.byo-panel .hint { margin-top: 8px; font-size: 11px; color: oklch(55% 0.01 255); line-height: 1.4; }
-.byo-status { font-size: 11.5px; color: oklch(55% 0.01 255); }
-
 .privacy { text-align: center; padding: 8px 16px; font-size: 11px; color: oklch(60% 0.01 255); background: white; border-top: 1px solid oklch(94% 0.006 240); flex-shrink: 0; }
 `;
-
-const PROVIDER_LABELS: Record<ProviderId, string> = {
-  cloudflare: "Cloudflare",
-  openai: "OpenAI",
-  anthropic: "Anthropic",
-};
 
 const ICONS = {
   mic: `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3M9 22h6"/></svg>`,
@@ -394,7 +361,6 @@ const ICONS = {
   restart: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>`,
   exp: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
   close: `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-  key: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`,
   vol: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`,
   volOff: `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`,
   timer: `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
@@ -408,7 +374,6 @@ export interface UIHandlers {
   onEnd: () => Promise<void> | void;
   onHint: () => Promise<string | null> | string | null;
   onRestart: () => Promise<void> | void;
-  onUserKeyChange: () => void;
   onDownloadResults: () => ResultSnapshot | null;
 }
 
@@ -485,7 +450,6 @@ export class UI {
   private stage!: HTMLElement;
   private debriefNode: HTMLElement | null = null;
   private hintNode: HTMLElement | null = null;
-  private byoPanelOpen = false;
 
   constructor(
     host: HTMLElement,
@@ -949,9 +913,6 @@ export class UI {
       <div style="display:flex;gap:4px;align-items:center">
         <button class="tbtn restart-btn" title="${escapeAttr(this.tr("restart"))}">${ICONS.restart}</button>
         <button class="tbtn export-btn" title="${escapeAttr(this.tr("downloadResults"))}" disabled>${ICONS.exp}</button>
-        <div class="byo-wrap">
-          <button class="tbtn byo-btn" title="${escapeAttr(this.tr("useMyApiKey"))}">${ICONS.key}</button>
-        </div>
         <button class="finish-btn" title="${escapeAttr(this.tr(this.ended ? "restart" : "finishAndDebrief"))}">${escapeHtml(this.tr(this.ended ? "restart" : "finish"))}</button>
       </div>
     `;
@@ -975,111 +936,6 @@ export class UI {
       finish.innerHTML = `<span class="spinner white"></span> ${escapeHtml(this.tr("scoringEllipsis"))}`;
       void this.handlers.onEnd();
     });
-    bar.querySelector(".byo-btn")!.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.toggleByoPanel(bar);
-    });
-  }
-
-  private toggleByoPanel(bar: HTMLElement): void {
-    const wrap = bar.querySelector(".byo-wrap") as HTMLElement;
-    const existing = wrap.querySelector(".byo-panel") as HTMLElement | null;
-    if (existing) {
-      existing.remove();
-      this.byoPanelOpen = false;
-      return;
-    }
-    this.byoPanelOpen = true;
-    const panel = this.buildByoPanel();
-    wrap.appendChild(panel);
-    const closeOnOutside = (ev: MouseEvent) => {
-      if (!wrap.contains(ev.target as Node)) {
-        panel.remove();
-        this.byoPanelOpen = false;
-        document.removeEventListener("click", closeOnOutside);
-      }
-    };
-    setTimeout(() => document.addEventListener("click", closeOnOutside), 0);
-  }
-
-  private buildByoPanel(): HTMLElement {
-    const stored = readUserKey();
-    const panel = document.createElement("div");
-    panel.className = "byo-panel open";
-    panel.innerHTML = `
-      <div class="byo-status">${escapeHtml(
-        stored
-          ? this.tr("usingYourKey", { provider: PROVIDER_LABELS[stored.provider] })
-          : this.tr("usingBundledKey"),
-      )}</div>
-      <label>${escapeHtml(this.tr("providerLabel"))}</label>
-      <select class="byo-provider">
-        ${(["cloudflare", "openai", "anthropic"] as ProviderId[])
-          .map(
-            (p) =>
-              `<option value="${p}"${stored?.provider === p ? " selected" : ""}>${PROVIDER_LABELS[p]}</option>`,
-          )
-          .join("")}
-      </select>
-      <label>${escapeHtml(this.tr("apiKeyLabel"))}</label>
-      <input class="byo-key" type="password" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.apiKey ?? "")}" />
-      <div class="byo-acct-row">
-        <label>${escapeHtml(this.tr("cloudflareAccountIdLabel"))}</label>
-        <input class="byo-acct" type="text" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.accountId ?? "")}" />
-      </div>
-      <label>${escapeHtml(this.tr("modelOptionalLabel"))}</label>
-      <input class="byo-model" type="text" autocomplete="off" spellcheck="false" value="${escapeAttr(stored?.model ?? "")}" />
-      <div class="row-buttons">
-        <button class="save">${escapeHtml(this.tr("saveBtn"))}</button>
-        <button class="clear">${escapeHtml(this.tr("clearBtn"))}</button>
-      </div>
-      <div class="hint">${escapeHtml(this.tr("byoHint"))}</div>
-    `;
-    const providerSel = panel.querySelector(".byo-provider") as HTMLSelectElement;
-    const acctRow = panel.querySelector(".byo-acct-row") as HTMLElement;
-    const modelInput = panel.querySelector(".byo-model") as HTMLInputElement;
-    const updateForProvider = () => {
-      const p = providerSel.value as ProviderId;
-      acctRow.style.display = p === "cloudflare" ? "" : "none";
-      modelInput.placeholder = DEFAULT_MODELS[p];
-    };
-    providerSel.addEventListener("change", updateForProvider);
-    updateForProvider();
-    panel.addEventListener("click", (e) => e.stopPropagation());
-
-    panel.querySelector(".save")!.addEventListener("click", () => {
-      const provider = providerSel.value as ProviderId;
-      const apiKey = (panel.querySelector(".byo-key") as HTMLInputElement).value.trim();
-      const accountId = (panel.querySelector(".byo-acct") as HTMLInputElement).value.trim();
-      const model = (modelInput.value || "").trim();
-      if (!apiKey) {
-        this.addSystemNote(this.tr("apiKeyRequired"));
-        return;
-      }
-      if (provider === "cloudflare" && !accountId) {
-        this.addSystemNote(this.tr("accountIdRequired"));
-        return;
-      }
-      const cfg: UserKeyConfig = {
-        provider,
-        apiKey,
-        accountId: provider === "cloudflare" ? accountId : undefined,
-        model: model || undefined,
-      };
-      writeUserKey(cfg);
-      panel.remove();
-      this.byoPanelOpen = false;
-      this.handlers.onUserKeyChange();
-      this.addSystemNote(this.tr("nowUsingYourKey", { provider: PROVIDER_LABELS[provider] }));
-    });
-    panel.querySelector(".clear")!.addEventListener("click", () => {
-      clearUserKey();
-      panel.remove();
-      this.byoPanelOpen = false;
-      this.handlers.onUserKeyChange();
-      this.addSystemNote(this.tr("clearedYourKey"));
-    });
-    return panel;
   }
 
   private renderSplit(): void {

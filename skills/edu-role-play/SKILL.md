@@ -216,4 +216,4 @@ Load only when needed:
 
 ## Privacy note to surface to the user
 
-Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the project's Cloudflare Worker proxy by default (`POST /v1/chat`), which calls Cloudflare Workers AI via the `env.AI` binding — no API keys live anywhere. Learners can override this per-browser via the **Use my own key ▾** link in the role-play footer — see [docs/byo-key.md](../../docs/byo-key.md).
+Transcripts are not stored. The bundled artifact runs entirely in the learner's browser; inference requests are routed through the project's Cloudflare Worker proxy (`POST /v1/chat`), which calls the configured provider via Worker-side secrets — no API keys live in the HTML.

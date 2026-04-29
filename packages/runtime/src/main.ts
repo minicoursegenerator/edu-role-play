@@ -1,9 +1,6 @@
 import { buildSystemPrompt, normalizePersonaReply, reinjectSystem } from "./chat";
 import { readCompositionFromDom } from "./composition-reader";
 import { detectCompletedObjectives } from "./objective-detector";
-import { createAnthropicProvider } from "./providers/anthropic";
-import { createCloudflareProvider } from "./providers/cloudflare";
-import { createOpenAIProvider } from "./providers/openai";
 import { createProxyProvider } from "./providers/proxy";
 import { createResultSnapshot, createSessionId } from "./results";
 import { scoreTranscript } from "./scoring";
@@ -11,7 +8,6 @@ import { createScorm12Adapter } from "./scorm";
 import { t } from "./locales";
 import type { ActivityEvent, ChatMessage, Provider, ResultSnapshot, RuntimeConfig } from "./types";
 import { UI } from "./ui";
-import { DEFAULT_MODELS, readUserKey } from "./user-key";
 
 function looksLikeNetworkBlock(err: unknown): boolean {
   if (!(err instanceof TypeError)) return false;
@@ -79,32 +75,8 @@ function applyProxyOverride(baked: RuntimeConfig): RuntimeConfig {
   return { ...baked, baseUrl: override };
 }
 
-function effectiveConfig(baked: RuntimeConfig): RuntimeConfig {
-  const user = readUserKey();
-  if (!user) return baked;
-  return {
-    provider: user.provider,
-    apiKey: user.apiKey,
-    accountId: user.accountId,
-    model: user.model ?? DEFAULT_MODELS[user.provider],
-    bundleId: baked.bundleId,
-    scorm: baked.scorm,
-  };
-}
-
 function createProvider(config: RuntimeConfig): Provider {
-  switch (config.provider) {
-    case "proxy":
-      return createProxyProvider(config);
-    case "cloudflare":
-      return createCloudflareProvider(config);
-    case "openai":
-      return createOpenAIProvider(config);
-    case "anthropic":
-      return createAnthropicProvider(config);
-    default:
-      throw new Error(`Unknown provider: ${(config as { provider: string }).provider}`);
-  }
+  return createProxyProvider(config);
 }
 
 export async function mount(host?: HTMLElement): Promise<void> {
@@ -135,7 +107,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
 
   const comp = readCompositionFromDom(root);
   baked = applyProxyOverride(baked);
-  let provider = createProvider(effectiveConfig(baked));
+  const provider = createProvider(baked);
   let history: ChatMessage[] = [];
   let completedObjectives = new Set<string>();
   let resultSnapshot: ResultSnapshot | null = null;
@@ -233,6 +205,10 @@ export async function mount(host?: HTMLElement): Promise<void> {
         const allMet = comp.objectives.every((o) => completed.has(o.id));
         if (allMet) {
           ui.addSystemNote(t(comp.locale, "allObjectivesMet"));
+          window.setTimeout(() => {
+            void endSession();
+          }, 1000);
+          return;
         }
       }
 
@@ -324,9 +300,6 @@ export async function mount(host?: HTMLElement): Promise<void> {
       ui.setResultsReady(false);
       scorm.setIncomplete();
       void sendOpening();
-    },
-    onUserKeyChange: () => {
-      provider = createProvider(effectiveConfig(baked));
     },
     onDownloadResults: () => {
       if (!resultSnapshot) return null;

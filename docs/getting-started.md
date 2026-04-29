@@ -25,4 +25,4 @@ No API key in the HTML. Bundled role-plays call a Cloudflare Worker proxy you de
 
 Open the bundled HTML in a browser to verify it runs. Then paste the contents into any HTML host (static site, LMS HTML widget, etc.).
 
-See also: [composition-format.md](composition-format.md), [byo-key.md](byo-key.md), [cli.md](cli.md).
+See also: [composition-format.md](composition-format.md), [cli.md](cli.md).

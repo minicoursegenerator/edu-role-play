@@ -1,16 +1,13 @@
-// "proxy" is the self-hosted Worker provider used by default bundles — the
-// proxy calls Cloudflare Workers AI through its binding so no key ships
-// in the HTML. "cloudflare" | "openai" | "anthropic" are only used when a
-// learner brings their own key via the BYO-key UI.
-export type ProviderId = "proxy" | "cloudflare" | "openai" | "anthropic";
-export type UserProviderId = "cloudflare" | "openai" | "anthropic";
+// The runtime only ships with the self-hosted Worker proxy provider —
+// the proxy calls Cloudflare Workers AI through its binding so no key
+// ships in the HTML.
+export type ProviderId = "proxy";
 
 export interface RuntimeConfig {
   provider: ProviderId;
   apiKey: string;
   accountId?: string;
-  // Model identifier. For the proxy provider, an empty string means "let
-  // the proxy pick its default". For BYO-key providers, must be set.
+  // Empty string means "let the proxy pick its default".
   model: string;
   baseUrl?: string;
   bundleId?: string;
@@ -18,13 +15,6 @@ export interface RuntimeConfig {
     enabled: boolean;
     version: "1.2";
   };
-}
-
-export interface UserKeyConfig {
-  provider: UserProviderId;
-  apiKey: string;
-  accountId?: string;
-  model?: string;
 }
 
 export interface PersonaData {

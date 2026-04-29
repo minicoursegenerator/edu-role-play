@@ -29,7 +29,6 @@ export interface LocaleStrings {
   muteVoice: string;
   unmuteVoice: string;
   downloadResults: string;
-  useMyApiKey: string;
   scoringEllipsis: string;
 
   // Briefing modal
@@ -69,20 +68,6 @@ export interface LocaleStrings {
   closeAndContinue: string;
   totalScore: string; // "Total {score} / {max}"
 
-  // BYO key panel
-  usingYourKey: string; // {provider}
-  usingBundledKey: string;
-  providerLabel: string;
-  apiKeyLabel: string;
-  cloudflareAccountIdLabel: string;
-  modelOptionalLabel: string;
-  saveBtn: string;
-  clearBtn: string;
-  byoHint: string;
-  apiKeyRequired: string;
-  accountIdRequired: string;
-  nowUsingYourKey: string; // {provider}
-  clearedYourKey: string;
 
   // System notes / errors
   errorPrefix: string; // {message}
@@ -104,7 +89,6 @@ const en: LocaleStrings = {
   muteVoice: "Mute voice",
   unmuteVoice: "Unmute voice",
   downloadResults: "Download results",
-  useMyApiKey: "Use my own API key",
   scoringEllipsis: "Scoring…",
 
   rolePlayBriefing: "Role-play briefing",
@@ -139,24 +123,11 @@ const en: LocaleStrings = {
   closeAndContinue: "Close & Continue",
   totalScore: "Total {score} / {max}",
 
-  usingYourKey: "Using your {provider} key",
-  usingBundledKey: "Using the bundled key",
-  providerLabel: "Provider",
-  apiKeyLabel: "API key",
-  cloudflareAccountIdLabel: "Cloudflare account ID",
-  modelOptionalLabel: "Model (optional)",
-  saveBtn: "Save",
-  clearBtn: "Clear",
-  byoHint: "Stored in this browser only. Overrides the bundled key for this session.",
-  apiKeyRequired: "API key is required.",
-  accountIdRequired: "Cloudflare account ID is required.",
-  nowUsingYourKey: "Now using your {provider} key.",
-  clearedYourKey: "Cleared your key; using the bundled key.",
 
   errorPrefix: "Error: {message}",
   scoringConversation: "Scoring the conversation…",
   conversationScored: "Conversation scored.",
-  allObjectivesMet: "All objectives appear met. End the conversation when you're ready.",
+  allObjectivesMet: "All objectives met. Wrapping up…",
   turnLimitReached: "Turn limit ({n}) reached. Wrapping up…",
   hintFailed: "Hint failed: {message}",
 
@@ -171,7 +142,6 @@ const es: LocaleStrings = {
   muteVoice: "Silenciar voz",
   unmuteVoice: "Activar voz",
   downloadResults: "Descargar resultados",
-  useMyApiKey: "Usar mi propia clave de API",
   scoringEllipsis: "Calificando…",
 
   rolePlayBriefing: "Resumen del juego de rol",
@@ -206,24 +176,11 @@ const es: LocaleStrings = {
   closeAndContinue: "Cerrar y continuar",
   totalScore: "Total {score} / {max}",
 
-  usingYourKey: "Usando tu clave de {provider}",
-  usingBundledKey: "Usando la clave incluida",
-  providerLabel: "Proveedor",
-  apiKeyLabel: "Clave de API",
-  cloudflareAccountIdLabel: "ID de cuenta de Cloudflare",
-  modelOptionalLabel: "Modelo (opcional)",
-  saveBtn: "Guardar",
-  clearBtn: "Borrar",
-  byoHint: "Se guarda solo en este navegador. Sustituye la clave incluida en esta sesión.",
-  apiKeyRequired: "La clave de API es obligatoria.",
-  accountIdRequired: "El ID de cuenta de Cloudflare es obligatorio.",
-  nowUsingYourKey: "Ahora usando tu clave de {provider}.",
-  clearedYourKey: "Clave eliminada; usando la clave incluida.",
 
   errorPrefix: "Error: {message}",
   scoringConversation: "Calificando la conversación…",
   conversationScored: "Conversación calificada.",
-  allObjectivesMet: "Todos los objetivos parecen cumplidos. Termina la conversación cuando quieras.",
+  allObjectivesMet: "Todos los objetivos cumplidos. Cerrando…",
   turnLimitReached: "Límite de turnos ({n}) alcanzado. Cerrando…",
   hintFailed: "Falló la pista: {message}",
 
@@ -238,7 +195,6 @@ const fr: LocaleStrings = {
   muteVoice: "Couper la voix",
   unmuteVoice: "Activer la voix",
   downloadResults: "Télécharger les résultats",
-  useMyApiKey: "Utiliser ma propre clé API",
   scoringEllipsis: "Évaluation…",
 
   rolePlayBriefing: "Briefing du jeu de rôle",
@@ -273,24 +229,11 @@ const fr: LocaleStrings = {
   closeAndContinue: "Fermer et continuer",
   totalScore: "Total {score} / {max}",
 
-  usingYourKey: "Utilise votre clé {provider}",
-  usingBundledKey: "Utilise la clé fournie",
-  providerLabel: "Fournisseur",
-  apiKeyLabel: "Clé API",
-  cloudflareAccountIdLabel: "ID de compte Cloudflare",
-  modelOptionalLabel: "Modèle (facultatif)",
-  saveBtn: "Enregistrer",
-  clearBtn: "Effacer",
-  byoHint: "Stocké uniquement dans ce navigateur. Remplace la clé fournie pour cette session.",
-  apiKeyRequired: "La clé API est requise.",
-  accountIdRequired: "L'ID de compte Cloudflare est requis.",
-  nowUsingYourKey: "Utilise maintenant votre clé {provider}.",
-  clearedYourKey: "Clé effacée ; utilisation de la clé fournie.",
 
   errorPrefix: "Erreur : {message}",
   scoringConversation: "Évaluation de la conversation…",
   conversationScored: "Conversation évaluée.",
-  allObjectivesMet: "Tous les objectifs semblent atteints. Terminez la conversation quand vous voulez.",
+  allObjectivesMet: "Tous les objectifs atteints. Clôture en cours…",
   turnLimitReached: "Limite de tours ({n}) atteinte. Conclusion…",
   hintFailed: "Échec de l'indice : {message}",
 
@@ -305,7 +248,6 @@ const de: LocaleStrings = {
   muteVoice: "Stimme stummschalten",
   unmuteVoice: "Stimme aktivieren",
   downloadResults: "Ergebnisse herunterladen",
-  useMyApiKey: "Eigenen API-Schlüssel verwenden",
   scoringEllipsis: "Bewertung…",
 
   rolePlayBriefing: "Rollenspiel-Briefing",
@@ -340,24 +282,11 @@ const de: LocaleStrings = {
   closeAndContinue: "Schließen & fortfahren",
   totalScore: "Gesamt {score} / {max}",
 
-  usingYourKey: "Verwende deinen {provider}-Schlüssel",
-  usingBundledKey: "Verwende den enthaltenen Schlüssel",
-  providerLabel: "Anbieter",
-  apiKeyLabel: "API-Schlüssel",
-  cloudflareAccountIdLabel: "Cloudflare-Konto-ID",
-  modelOptionalLabel: "Modell (optional)",
-  saveBtn: "Speichern",
-  clearBtn: "Löschen",
-  byoHint: "Wird nur in diesem Browser gespeichert. Überschreibt den enthaltenen Schlüssel für diese Sitzung.",
-  apiKeyRequired: "API-Schlüssel ist erforderlich.",
-  accountIdRequired: "Cloudflare-Konto-ID ist erforderlich.",
-  nowUsingYourKey: "Verwende jetzt deinen {provider}-Schlüssel.",
-  clearedYourKey: "Schlüssel gelöscht; verwende den enthaltenen Schlüssel.",
 
   errorPrefix: "Fehler: {message}",
   scoringConversation: "Bewerte die Unterhaltung…",
   conversationScored: "Unterhaltung bewertet.",
-  allObjectivesMet: "Alle Ziele scheinen erreicht. Beende die Unterhaltung, wann du bereit bist.",
+  allObjectivesMet: "Alle Ziele erreicht. Abschluss läuft…",
   turnLimitReached: "Zugbegrenzung ({n}) erreicht. Abschluss…",
   hintFailed: "Hinweis fehlgeschlagen: {message}",
 
@@ -372,7 +301,6 @@ const pt: LocaleStrings = {
   muteVoice: "Silenciar voz",
   unmuteVoice: "Ativar voz",
   downloadResults: "Baixar resultados",
-  useMyApiKey: "Usar minha própria chave de API",
   scoringEllipsis: "Avaliando…",
 
   rolePlayBriefing: "Resumo do role-play",
@@ -407,24 +335,11 @@ const pt: LocaleStrings = {
   closeAndContinue: "Fechar e continuar",
   totalScore: "Total {score} / {max}",
 
-  usingYourKey: "Usando sua chave {provider}",
-  usingBundledKey: "Usando a chave incluída",
-  providerLabel: "Provedor",
-  apiKeyLabel: "Chave de API",
-  cloudflareAccountIdLabel: "ID da conta Cloudflare",
-  modelOptionalLabel: "Modelo (opcional)",
-  saveBtn: "Salvar",
-  clearBtn: "Limpar",
-  byoHint: "Armazenado apenas neste navegador. Substitui a chave incluída nesta sessão.",
-  apiKeyRequired: "A chave de API é obrigatória.",
-  accountIdRequired: "O ID da conta Cloudflare é obrigatório.",
-  nowUsingYourKey: "Agora usando sua chave {provider}.",
-  clearedYourKey: "Chave removida; usando a chave incluída.",
 
   errorPrefix: "Erro: {message}",
   scoringConversation: "Avaliando a conversa…",
   conversationScored: "Conversa avaliada.",
-  allObjectivesMet: "Todos os objetivos parecem cumpridos. Encerre a conversa quando quiser.",
+  allObjectivesMet: "Todos os objetivos cumpridos. Encerrando…",
   turnLimitReached: "Limite de turnos ({n}) atingido. Encerrando…",
   hintFailed: "Falha na dica: {message}",
 
@@ -439,7 +354,6 @@ const it: LocaleStrings = {
   muteVoice: "Disattiva voce",
   unmuteVoice: "Attiva voce",
   downloadResults: "Scarica risultati",
-  useMyApiKey: "Usa la mia chiave API",
   scoringEllipsis: "Valutazione…",
 
   rolePlayBriefing: "Briefing del role-play",
@@ -474,24 +388,11 @@ const it: LocaleStrings = {
   closeAndContinue: "Chiudi e continua",
   totalScore: "Totale {score} / {max}",
 
-  usingYourKey: "Stai usando la tua chiave {provider}",
-  usingBundledKey: "Stai usando la chiave inclusa",
-  providerLabel: "Fornitore",
-  apiKeyLabel: "Chiave API",
-  cloudflareAccountIdLabel: "ID account Cloudflare",
-  modelOptionalLabel: "Modello (opzionale)",
-  saveBtn: "Salva",
-  clearBtn: "Cancella",
-  byoHint: "Salvata solo in questo browser. Sostituisce la chiave inclusa per questa sessione.",
-  apiKeyRequired: "La chiave API è obbligatoria.",
-  accountIdRequired: "L'ID account Cloudflare è obbligatorio.",
-  nowUsingYourKey: "Ora stai usando la tua chiave {provider}.",
-  clearedYourKey: "Chiave eliminata; sto usando la chiave inclusa.",
 
   errorPrefix: "Errore: {message}",
   scoringConversation: "Valutando la conversazione…",
   conversationScored: "Conversazione valutata.",
-  allObjectivesMet: "Tutti gli obiettivi sembrano raggiunti. Termina la conversazione quando vuoi.",
+  allObjectivesMet: "Tutti gli obiettivi raggiunti. Chiusura…",
   turnLimitReached: "Limite di turni ({n}) raggiunto. Sto concludendo…",
   hintFailed: "Suggerimento fallito: {message}",
 
@@ -506,7 +407,6 @@ const tr: LocaleStrings = {
   muteVoice: "Sesi kapat",
   unmuteVoice: "Sesi aç",
   downloadResults: "Sonuçları indir",
-  useMyApiKey: "Kendi API anahtarımı kullan",
   scoringEllipsis: "Puanlanıyor…",
 
   rolePlayBriefing: "Rol yapma brifingi",
@@ -541,24 +441,11 @@ const tr: LocaleStrings = {
   closeAndContinue: "Kapat ve devam et",
   totalScore: "Toplam {score} / {max}",
 
-  usingYourKey: "{provider} anahtarın kullanılıyor",
-  usingBundledKey: "Pakete dahil anahtar kullanılıyor",
-  providerLabel: "Sağlayıcı",
-  apiKeyLabel: "API anahtarı",
-  cloudflareAccountIdLabel: "Cloudflare hesap kimliği",
-  modelOptionalLabel: "Model (isteğe bağlı)",
-  saveBtn: "Kaydet",
-  clearBtn: "Temizle",
-  byoHint: "Yalnızca bu tarayıcıda saklanır. Bu oturum için pakete dahil anahtarın yerine geçer.",
-  apiKeyRequired: "API anahtarı gerekli.",
-  accountIdRequired: "Cloudflare hesap kimliği gerekli.",
-  nowUsingYourKey: "Artık {provider} anahtarın kullanılıyor.",
-  clearedYourKey: "Anahtarın temizlendi; pakete dahil anahtar kullanılıyor.",
 
   errorPrefix: "Hata: {message}",
   scoringConversation: "Konuşma puanlanıyor…",
   conversationScored: "Konuşma puanlandı.",
-  allObjectivesMet: "Tüm hedeflere ulaşılmış görünüyor. Hazır olduğunda konuşmayı sonlandır.",
+  allObjectivesMet: "Tüm hedeflere ulaşıldı. Tamamlanıyor…",
   turnLimitReached: "Tur sınırı ({n}) doldu. Bitiriliyor…",
   hintFailed: "İpucu başarısız: {message}",
 
@@ -573,7 +460,6 @@ const ja: LocaleStrings = {
   muteVoice: "音声をミュート",
   unmuteVoice: "音声をオン",
   downloadResults: "結果をダウンロード",
-  useMyApiKey: "自分のAPIキーを使う",
   scoringEllipsis: "採点中…",
 
   rolePlayBriefing: "ロールプレイの説明",
@@ -608,24 +494,11 @@ const ja: LocaleStrings = {
   closeAndContinue: "閉じて続ける",
   totalScore: "合計 {score} / {max}",
 
-  usingYourKey: "あなたの{provider}キーを使用中",
-  usingBundledKey: "同梱キーを使用中",
-  providerLabel: "プロバイダー",
-  apiKeyLabel: "APIキー",
-  cloudflareAccountIdLabel: "CloudflareアカウントID",
-  modelOptionalLabel: "モデル(任意)",
-  saveBtn: "保存",
-  clearBtn: "クリア",
-  byoHint: "このブラウザにのみ保存されます。このセッション中は同梱キーの代わりに使われます。",
-  apiKeyRequired: "APIキーは必須です。",
-  accountIdRequired: "CloudflareアカウントIDは必須です。",
-  nowUsingYourKey: "あなたの{provider}キーを使用しています。",
-  clearedYourKey: "キーをクリアしました。同梱キーを使用します。",
 
   errorPrefix: "エラー: {message}",
   scoringConversation: "会話を採点中…",
   conversationScored: "会話を採点しました。",
-  allObjectivesMet: "すべての目標が達成されたようです。準備ができたら会話を終えてください。",
+  allObjectivesMet: "すべての目標が達成されました。終了します…",
   turnLimitReached: "ターン上限({n})に達しました。締めくくります…",
   hintFailed: "ヒントの取得に失敗: {message}",
 
@@ -640,7 +513,6 @@ const zh: LocaleStrings = {
   muteVoice: "静音",
   unmuteVoice: "取消静音",
   downloadResults: "下载结果",
-  useMyApiKey: "使用我自己的 API 密钥",
   scoringEllipsis: "评分中…",
 
   rolePlayBriefing: "角色扮演简介",
@@ -675,24 +547,11 @@ const zh: LocaleStrings = {
   closeAndContinue: "关闭并继续",
   totalScore: "总计 {score} / {max}",
 
-  usingYourKey: "正在使用你的 {provider} 密钥",
-  usingBundledKey: "正在使用内置密钥",
-  providerLabel: "提供商",
-  apiKeyLabel: "API 密钥",
-  cloudflareAccountIdLabel: "Cloudflare 账户 ID",
-  modelOptionalLabel: "模型(可选)",
-  saveBtn: "保存",
-  clearBtn: "清除",
-  byoHint: "仅保存在此浏览器中。在此会话中覆盖内置密钥。",
-  apiKeyRequired: "API 密钥是必填项。",
-  accountIdRequired: "Cloudflare 账户 ID 是必填项。",
-  nowUsingYourKey: "现已使用你的 {provider} 密钥。",
-  clearedYourKey: "已清除你的密钥;使用内置密钥。",
 
   errorPrefix: "错误: {message}",
   scoringConversation: "正在为对话评分…",
   conversationScored: "对话已评分。",
-  allObjectivesMet: "所有目标似乎都已达成。准备好后即可结束对话。",
+  allObjectivesMet: "所有目标已达成。即将结束…",
   turnLimitReached: "已达回合上限({n})。即将收尾…",
   hintFailed: "提示失败: {message}",
 
@@ -707,7 +566,6 @@ const ar: LocaleStrings = {
   muteVoice: "كتم الصوت",
   unmuteVoice: "تشغيل الصوت",
   downloadResults: "تنزيل النتائج",
-  useMyApiKey: "استخدام مفتاح API الخاص بي",
   scoringEllipsis: "جارٍ التقييم…",
 
   rolePlayBriefing: "ملخص لعب الأدوار",
@@ -742,24 +600,11 @@ const ar: LocaleStrings = {
   closeAndContinue: "إغلاق ومتابعة",
   totalScore: "الإجمالي {score} / {max}",
 
-  usingYourKey: "يتم استخدام مفتاح {provider} الخاص بك",
-  usingBundledKey: "يتم استخدام المفتاح المضمّن",
-  providerLabel: "المزود",
-  apiKeyLabel: "مفتاح API",
-  cloudflareAccountIdLabel: "معرّف حساب Cloudflare",
-  modelOptionalLabel: "النموذج (اختياري)",
-  saveBtn: "حفظ",
-  clearBtn: "مسح",
-  byoHint: "يتم تخزينه في هذا المتصفح فقط. يتجاوز المفتاح المضمّن لهذه الجلسة.",
-  apiKeyRequired: "مفتاح API مطلوب.",
-  accountIdRequired: "معرّف حساب Cloudflare مطلوب.",
-  nowUsingYourKey: "يتم الآن استخدام مفتاح {provider} الخاص بك.",
-  clearedYourKey: "تم مسح المفتاح؛ يتم استخدام المفتاح المضمّن.",
 
   errorPrefix: "خطأ: {message}",
   scoringConversation: "جارٍ تقييم المحادثة…",
   conversationScored: "تم تقييم المحادثة.",
-  allObjectivesMet: "يبدو أن جميع الأهداف قد تحققت. أنهِ المحادثة عندما تكون جاهزًا.",
+  allObjectivesMet: "تم تحقيق جميع الأهداف. جارٍ الإنهاء…",
   turnLimitReached: "تم بلوغ حد الأدوار ({n}). جارٍ الإنهاء…",
   hintFailed: "فشل التلميح: {message}",
 
