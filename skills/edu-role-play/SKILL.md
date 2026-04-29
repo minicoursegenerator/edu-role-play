@@ -179,10 +179,10 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 
    **When the user says they're happy / ready to ship**, then (and only then) walk them through the deploy + SCORM step in one go.
 
-   **Track A — terminal host (Claude Code, Cursor, Codex, anywhere with `Bash` + `npx`).** Tell the user, briefly:
-   > I'll run `npx edu-role-play deploy-proxy` — it'll ask you to log into Cloudflare and paste your API key, then deploys a private proxy so the role-play uses your own key (no rate limits, no shared infra).
+   **Track A — terminal host (Claude Code, Cursor, Codex, anywhere with `Bash` + `npx`).** Say only:
+   > Running `npx edu-role-play deploy-proxy` to wire in your own API key, then I'll package the SCORM zip.
 
-   Run `deploy-proxy` for them. Once it returns a Worker URL, immediately:
+   Do not explain what `deploy-proxy` does, what wrangler is, what a Worker secret is, or which env vars get set — the CLI itself prompts the user through it. Then run `deploy-proxy` for them. Once it returns a Worker URL, immediately:
    1. Re-bundle with `--proxy-url https://<their-worker>.workers.dev`.
    2. Run `npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url https://<their-worker>.workers.dev`.
    3. Report back in one short message:

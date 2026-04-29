@@ -85,10 +85,7 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
 
   console.log(`Bundling with proxy: ${baseUrl}${usingDefault ? " (shared default)" : ""}`);
   if (usingDefault) {
-    console.log(
-      "Note: shared proxy is rate-limited and intended for iteration. Before sharing this bundle\n" +
-        "or using your own API key, run `edu-role-play deploy-proxy` to deploy your own.",
-    );
+    console.log("Run `edu-role-play deploy-proxy` to use your own API key before packaging a SCORM zip.");
   }
 
   const runtimeJs = readFileSync(runtimeIifePath(), "utf8");
