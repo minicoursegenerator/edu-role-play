@@ -6,6 +6,26 @@ import { proxyWorkerTemplateDir } from "../paths.js";
 import { writeUserConfig } from "../config.js";
 import { askSecret, confirm, select } from "../prompts.js";
 
+// Windows: `npx` and `wrangler` ship as `.cmd` shims. Modern Node
+// (≥18.20.2 / 20.12.2 / 21.7.3, CVE-2024-27980 hardening) refuses to spawn
+// `.cmd`/`.bat` files via `child_process.spawn` unless `shell: true` — the
+// call exits with no useful output, which is exactly the "Could not run
+// wrangler" failure mode reported on Windows even after `npm install -g
+// wrangler`. Routing through cmd.exe via shell:true fixes that.
+const SPAWN_SHELL = process.platform === "win32";
+
+// Prefer a globally installed `wrangler` (faster, no npx round-trip) when
+// one is on PATH. Fall back to `npx --yes wrangler` so first-time users
+// without a global install still work.
+function wranglerInvocation(extra: string[]): { cmd: string; args: string[] } {
+  const direct = spawnSync("wrangler", ["--version"], {
+    stdio: "ignore",
+    shell: SPAWN_SHELL,
+  });
+  if (direct.status === 0) return { cmd: "wrangler", args: extra };
+  return { cmd: "npx", args: ["--yes", "wrangler", ...extra] };
+}
+
 type Provider = "workers-ai" | "anthropic" | "openai";
 
 export interface DeployProxyOptions {
@@ -48,10 +68,12 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   // message even though wrangler never ran. Probing here gives us a focused
   // error and warms the npx cache so subsequent calls are fast.
   console.log("Checking wrangler…");
-  const probe = spawnSync("npx", ["--yes", "wrangler", "--version"], {
+  const probeInvoke = wranglerInvocation(["--version"]);
+  const probe = spawnSync(probeInvoke.cmd, probeInvoke.args, {
     cwd: workDir,
     stdio: "pipe",
     encoding: "utf8",
+    shell: SPAWN_SHELL,
   });
   if (probe.status !== 0) {
     const detail = `${probe.stdout ?? ""}${probe.stderr ?? ""}`.trim();
@@ -77,10 +99,12 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   // so the OAuth browser flow isn't fighting our stdin. wrangler whoami exits
   // 0 even when unauthenticated, so we also scan its output.
   const hasCfToken = !!(process.env.CLOUDFLARE_API_TOKEN?.trim() || process.env.CF_API_TOKEN?.trim());
-  const who = spawnSync("npx", ["--yes", "wrangler", "whoami"], {
+  const whoInvoke = wranglerInvocation(["whoami"]);
+  const who = spawnSync(whoInvoke.cmd, whoInvoke.args, {
     cwd: workDir,
     stdio: "pipe",
     encoding: "utf8",
+    shell: SPAWN_SHELL,
   });
   const whoText = `${who.stdout ?? ""}\n${who.stderr ?? ""}`;
   const looksAuthed =
@@ -100,9 +124,11 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
       console.error("Aborted. Run `npx wrangler login` and try again.");
       return 1;
     }
-    const login = spawnSync("npx", ["--yes", "wrangler", "login"], {
+    const loginInvoke = wranglerInvocation(["login"]);
+    const login = spawnSync(loginInvoke.cmd, loginInvoke.args, {
       cwd: workDir,
       stdio: "inherit",
+      shell: SPAWN_SHELL,
     });
     if (login.status !== 0) {
       console.error("");
@@ -126,13 +152,14 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   // trace.
   console.log("");
   console.log("Deploying Worker…");
-  let deployOut = await runCapturingStdout("npx", ["--yes", "wrangler", "deploy"], workDir);
+  const deployInvoke = wranglerInvocation(["deploy"]);
+  let deployOut = await runCapturingStdout(deployInvoke.cmd, deployInvoke.args, workDir);
   if (deployOut.status !== 0 && needsWorkersDevSubdomain(deployOut)) {
     const handled = await handleMissingSubdomain(deployOut, opts);
     if (!handled) return 1;
     console.log("");
     console.log("Retrying deploy…");
-    deployOut = await runCapturingStdout("npx", ["--yes", "wrangler", "deploy"], workDir);
+    deployOut = await runCapturingStdout(deployInvoke.cmd, deployInvoke.args, workDir);
   }
   if (deployOut.status !== 0) {
     console.error("wrangler deploy failed.");
@@ -226,7 +253,11 @@ interface CapturedRun {
 
 function runCapturingStdout(cmd: string, args: string[], cwd: string): Promise<CapturedRun> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(cmd, args, {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: SPAWN_SHELL,
+    });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk: Buffer) => {
@@ -331,10 +362,16 @@ function tryOpenUrl(url: string): Promise<boolean> {
 
 function pipeSecret(name: string, value: string, cwd: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const child = spawn("npx", ["--yes", "wrangler", "secret", "put", name], {
+    const invoke = wranglerInvocation(["secret", "put", name]);
+    const child = spawn(invoke.cmd, invoke.args, {
       cwd,
       stdio: ["pipe", "inherit", "inherit"],
+      shell: SPAWN_SHELL,
     });
+    if (!child.stdin) {
+      resolve(false);
+      return;
+    }
     child.stdin.write(value + "\n");
     child.stdin.end();
     child.on("close", (status) => resolve(status === 0));
