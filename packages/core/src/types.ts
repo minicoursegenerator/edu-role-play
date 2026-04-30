@@ -33,6 +33,7 @@ export interface Termination {
 export interface Composition {
   id: string;
   runtimeVersion: string;
+  locale: string;
   persona: Persona;
   scenario: string;
   objectives: Objective[];

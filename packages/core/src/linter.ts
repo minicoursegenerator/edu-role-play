@@ -2,15 +2,40 @@ import type { Composition, LintIssue } from "./types.js";
 
 export const CURRENT_RUNTIME_VERSION = "0.1.0";
 
-const VAGUE_VERBS = [
-  "understand",
-  "know",
-  "feel",
-  "appreciate",
-  "be aware",
-  "learn about",
-  "familiarize",
-];
+// Per-locale vague verbs. The objective-observable rule fires when an objective
+// uses one of these. Locales not in the map fall back to English.
+const VAGUE_VERBS_BY_LOCALE: Record<string, string[]> = {
+  en: ["understand", "understands", "understanding", "know", "knows", "knowing", "feel", "feels", "feeling", "appreciate", "appreciates", "be aware", "aware of", "learn about", "learns about", "familiarize", "familiarise"],
+  es: ["entender", "entiende", "comprender", "comprende", "saber", "sabe", "sentir", "siente", "apreciar", "aprecia", "ser consciente", "estar consciente", "familiarizarse", "conocer"],
+  fr: ["comprendre", "comprend", "savoir", "sait", "ressentir", "ressent", "apprécier", "apprecie", "être conscient", "se familiariser", "connaître", "connait"],
+  de: ["verstehen", "versteht", "wissen", "weiß", "fühlen", "fühlt", "schätzen", "schätzt", "bewusst sein", "sich bewusst", "kennenlernen", "vertraut machen"],
+  pt: ["entender", "entende", "compreender", "compreende", "saber", "sabe", "sentir", "sente", "apreciar", "aprecia", "estar ciente", "familiarizar", "conhecer"],
+  it: ["capire", "capisce", "comprendere", "comprende", "sapere", "sa", "sentire", "sente", "apprezzare", "apprezza", "essere consapevole", "familiarizzare", "conoscere"],
+  tr: ["anlamak", "anlar", "anlasın", "bilmek", "bilir", "bilsin", "hissetmek", "hisseder", "takdir etmek", "takdir eder", "farkında olmak", "farkında olsun", "öğrenmek hakkında", "aşina olmak", "aşina olsun"],
+  ja: ["理解する", "理解", "知る", "感じる", "感じ取る", "把握する", "意識する", "馴染む"],
+  zh: ["理解", "了解", "知道", "感受", "感觉", "欣赏", "意识到", "熟悉"],
+  ar: ["يفهم", "فهم", "يعرف", "معرفة", "يشعر", "شعور", "يقدر", "تقدير", "يدرك", "إدراك", "يتعرف", "تعرف"],
+};
+
+// Per-locale second-person markers. The scenario-second-person rule fires when
+// none of these appear in the scenario. English uses pronouns; many languages
+// rely on verb endings, so the pattern lists common forms. Locales not in the
+// map skip the check (warn-only via WARN_ONLY_SECOND_PERSON_LOCALES below).
+const SECOND_PERSON_BY_LOCALE: Record<string, RegExp> = {
+  en: /\byou\b|\byour\b|\byou're\b|\byourself\b/i,
+  es: /\btú\b|\busted\b|\btu\b|\btus\b|\bsus\b|\bte\b/i,
+  fr: /\btu\b|\btoi\b|\bvous\b|\bton\b|\bta\b|\btes\b|\bvotre\b|\bvos\b/i,
+  de: /\bdu\b|\bdich\b|\bdir\b|\bdein(e|en|er|es)?\b|\bsie\b|\bihnen\b|\bihr(e|en|er|es)?\b/i,
+  pt: /\btu\b|\bvocê\b|\bvoce\b|\bteu\b|\btua\b|\bseu\b|\bsua\b|\bte\b/i,
+  it: /\btu\b|\blei\b|\btuo\b|\btua\b|\btuoi\b|\btue\b|\bti\b/i,
+  tr: /\bsen\b|\bsiz\b|\bsana\b|\bsize\b|\bseni\b|\bsizi\b|\bsenin\b|\bsizin\b|(sın|sin|sun|sün|siniz|sınız|sunuz|sünüz|yorsun|yorsunuz)\b/i,
+  ar: /\bأنت\b|\bأنتَ\b|\bأنتِ\b|\bأنتم\b|\bك\b/,
+};
+
+// For locales where second-person detection via regex is unreliable (CJK
+// languages without spaces / pronoun-drop), downgrade scenario-second-person
+// from error to warning instead of skipping silently.
+const WARN_ONLY_SECOND_PERSON_LOCALES = new Set(["ja", "zh"]);
 
 function err(rule: string, message: string): LintIssue {
   return { rule, severity: "error", message };
@@ -26,15 +51,23 @@ export function lint(comp: Composition): LintIssue[] {
   if (!comp.id) issues.push(err("root-id", "<edu-role-play> missing id attribute"));
 
   // Rule 1: observable objectives
+  const locale = (comp.locale || "en").toLowerCase();
+  const vagueVerbs = VAGUE_VERBS_BY_LOCALE[locale] ?? VAGUE_VERBS_BY_LOCALE.en;
+  // Languages without word boundaries on whitespace (CJK) need substring matching.
+  const usesWordBoundaries = !["ja", "zh"].includes(locale);
   for (const o of comp.objectives) {
     if (!o.id) {
       issues.push(err("objective-id", `Objective missing id: "${o.text.slice(0, 40)}"`));
       continue;
     }
     const lower = o.text.toLowerCase();
-    const hit = VAGUE_VERBS.find((v) =>
-      new RegExp(`\\b${v.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`).test(lower),
-    );
+    const hit = vagueVerbs.find((v) => {
+      const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = usesWordBoundaries
+        ? new RegExp(`\\b${escaped}\\b`, "u")
+        : new RegExp(escaped, "u");
+      return re.test(lower);
+    });
     if (hit) {
       issues.push(
         err(
@@ -94,9 +127,20 @@ export function lint(comp: Composition): LintIssue[] {
         ),
       );
     }
-    if (!/\byou\b|\byour\b/i.test(comp.scenario)) {
+    const secondPerson = SECOND_PERSON_BY_LOCALE[locale];
+    const isWarnOnly = WARN_ONLY_SECOND_PERSON_LOCALES.has(locale);
+    if (secondPerson && !secondPerson.test(comp.scenario)) {
+      const issue =
+        isWarnOnly
+          ? warn("scenario-second-person", "<edu-scenario> should address the learner directly (locale-specific second-person check is best-effort).")
+          : err("scenario-second-person", "<edu-scenario> should address the learner (use second-person forms appropriate to the locale).");
+      issues.push(issue);
+    } else if (!secondPerson && isWarnOnly) {
       issues.push(
-        err("scenario-second-person", "<edu-scenario> should address the learner (use \"you\" / \"your\")."),
+        warn(
+          "scenario-second-person",
+          `<edu-scenario>: second-person check skipped for locale "${locale}".`,
+        ),
       );
     }
   }

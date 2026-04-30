@@ -78,10 +78,21 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
     }
   }
 
-  // Deploy.
+  // Deploy. Cloudflare requires the account to have a *.workers.dev subdomain
+  // registered before any Worker can publish there. It's a one-time, account-
+  // level setup the user must do in the dashboard. Detect that failure mode
+  // and walk them through it instead of leaving them with a wrangler stack
+  // trace.
   console.log("");
   console.log("Deploying Worker…");
-  const deployOut = await runCapturingStdout("npx", ["--yes", "wrangler", "deploy"], workDir);
+  let deployOut = await runCapturingStdout("npx", ["--yes", "wrangler", "deploy"], workDir);
+  if (deployOut.status !== 0 && needsWorkersDevSubdomain(deployOut)) {
+    const handled = await handleMissingSubdomain(deployOut, opts);
+    if (!handled) return 1;
+    console.log("");
+    console.log("Retrying deploy…");
+    deployOut = await runCapturingStdout("npx", ["--yes", "wrangler", "deploy"], workDir);
+  }
   if (deployOut.status !== 0) {
     console.error("wrangler deploy failed.");
     return 1;
@@ -194,6 +205,81 @@ function runCapturingStdout(cmd: string, args: string[], cwd: string): Promise<C
 function extractWorkerUrl(text: string): string | null {
   const match = text.match(/https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev/i);
   return match ? match[0] : null;
+}
+
+function needsWorkersDevSubdomain(run: CapturedRun): boolean {
+  const text = `${run.stdout}\n${run.stderr}`;
+  return (
+    /register a workers\.dev subdomain/i.test(text) ||
+    /workers\/onboarding/i.test(text)
+  );
+}
+
+function extractOnboardingUrl(run: CapturedRun): string | null {
+  const text = `${run.stdout}\n${run.stderr}`;
+  const m = text.match(/https:\/\/dash\.cloudflare\.com\/[a-f0-9]+\/workers\/onboarding/i);
+  return m ? m[0] : null;
+}
+
+async function handleMissingSubdomain(
+  run: CapturedRun,
+  opts: DeployProxyOptions,
+): Promise<boolean> {
+  const onboardingUrl =
+    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers/onboarding";
+  console.log("");
+  console.log("Cloudflare needs a *.workers.dev subdomain on your account before any Worker can publish.");
+  console.log("This is a one-time setup — you pick a name (e.g. \"agent1-erp\") and confirm. It's free.");
+  console.log("");
+  console.log(`Open: ${onboardingUrl}`);
+  if (opts.nonInteractive) {
+    console.error("Re-run after registering the subdomain (or without --non-interactive to be guided through it).");
+    return false;
+  }
+  const opened = await tryOpenUrl(onboardingUrl);
+  if (opened) {
+    console.log("(Opened in your browser.)");
+  } else {
+    console.log("(Copy the URL above into your browser.)");
+  }
+  console.log("");
+  const ok = await confirm(
+    "Press Y once you've picked and saved a subdomain to retry deploy.",
+    true,
+  );
+  if (!ok) {
+    console.error("Aborted. Re-run `npx edu-role-play deploy-proxy` after registering the subdomain.");
+    return false;
+  }
+  return true;
+}
+
+function tryOpenUrl(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const platform = process.platform;
+    let cmd: string;
+    let args: string[];
+    if (platform === "darwin") {
+      cmd = "open";
+      args = [url];
+    } else if (platform === "win32") {
+      cmd = "cmd";
+      args = ["/c", "start", "", url];
+    } else {
+      cmd = "xdg-open";
+      args = [url];
+    }
+    try {
+      const child = spawn(cmd, args, { stdio: "ignore", detached: true });
+      child.on("error", () => resolve(false));
+      child.on("spawn", () => {
+        child.unref();
+        resolve(true);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
 }
 
 function pipeSecret(name: string, value: string, cwd: string): Promise<boolean> {

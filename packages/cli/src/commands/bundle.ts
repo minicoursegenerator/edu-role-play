@@ -12,6 +12,62 @@ const DEFAULT_AVATAR = "middle-aged-man-friendly";
 // sharing or using your own API key.
 const DEFAULT_PROXY_URL = "https://erp-proxy.eren-be8.workers.dev";
 
+// Remove the "isn't bundled yet" fallback notice and its scoped CSS from the
+// bundled output. The fallback is meant to render only when someone opens the
+// raw .erp source — leaving it in the bundled HTML makes it flash before the
+// runtime mounts (or persist if the runtime fails to load), making a working
+// bundle look broken.
+function stripFallback(html: string): string {
+  let out = html;
+  // Drop the fallback element (with surrounding whitespace).
+  out = out.replace(
+    /[ \t]*<div\b[^>]*\bdata-erp-fallback\b[^>]*>[\s\S]*?<\/div>[ \t]*\n?/gi,
+    "",
+  );
+  // Drop CSS rules referencing [data-erp-fallback]. We operate only inside
+  // <style> blocks and rebuild the body by dropping each top-level rule whose
+  // selector contains the attribute (handles both the ":not([data-erp-fallback])"
+  // hide-everything rule and the notice-styling rules).
+  out = out.replace(
+    /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
+    (match, open: string, body: string, close: string) => {
+      const cleaned = stripFallbackRules(body);
+      return `${open}${cleaned}${close}`;
+    },
+  );
+  return out;
+}
+
+function stripFallbackRules(css: string): string {
+  let out = "";
+  let i = 0;
+  while (i < css.length) {
+    const braceOpen = css.indexOf("{", i);
+    if (braceOpen === -1) {
+      out += css.slice(i);
+      break;
+    }
+    const braceClose = css.indexOf("}", braceOpen + 1);
+    if (braceClose === -1) {
+      out += css.slice(i);
+      break;
+    }
+    const selector = css.slice(i, braceOpen);
+    const rule = css.slice(i, braceClose + 1);
+    if (selector.includes("[data-erp-fallback]")) {
+      // Skip this rule and any single trailing newline so we don't leave a
+      // run of blank lines behind.
+      let skip = braceClose + 1;
+      if (css[skip] === "\n") skip += 1;
+      i = skip;
+      continue;
+    }
+    out += rule;
+    i = braceClose + 1;
+  }
+  return out;
+}
+
 function inlineAvatar(html: string, avatarId: string): string {
   const id = avatarId.trim() || DEFAULT_AVATAR;
   if (id.startsWith("data:") || id.startsWith("http")) return html;
@@ -95,7 +151,7 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
     `<script type="application/json" id="edu-role-play-config">${configJson}</script>\n` +
     `<script>${runtimeJs}</script>\n`;
 
-  const htmlWithAvatar = inlineAvatar(html, comp.persona.avatar);
+  const htmlWithAvatar = inlineAvatar(stripFallback(html), comp.persona.avatar);
 
   let output: string;
   if (/<\/body>/i.test(htmlWithAvatar)) {

@@ -96,6 +96,7 @@ export function parseComposition(html: string): Composition {
   return {
     id: root.getAttribute("id")?.trim() ?? "",
     runtimeVersion: root.getAttribute("runtime-version")?.trim() ?? "",
+    locale: (root.getAttribute("locale")?.trim() ?? "en").toLowerCase(),
     persona: parsePersona(root),
     scenario: scenarioEl?.textContent.trim() ?? "",
     objectives: parseObjectives(root),
