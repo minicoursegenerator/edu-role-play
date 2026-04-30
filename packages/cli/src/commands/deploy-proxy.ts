@@ -42,13 +42,21 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   console.log(`Staged proxy-worker → ${workDir}`);
 
   // Probe wrangler. Don't auto-login; tell the user to run it themselves so
-  // the OAuth browser flow isn't fighting our stdin.
+  // the OAuth browser flow isn't fighting our stdin. wrangler whoami exits 0
+  // even when unauthenticated, so we also scan its output.
+  const hasCfToken = !!(process.env.CLOUDFLARE_API_TOKEN?.trim() || process.env.CF_API_TOKEN?.trim());
   const who = spawnSync("npx", ["--yes", "wrangler", "whoami"], {
     cwd: workDir,
     stdio: "pipe",
     encoding: "utf8",
   });
-  if (who.status !== 0) {
+  const whoText = `${who.stdout ?? ""}\n${who.stderr ?? ""}`;
+  const looksAuthed =
+    hasCfToken ||
+    /You are logged in/i.test(whoText) ||
+    /associated with the email/i.test(whoText) ||
+    /Account Name/i.test(whoText);
+  if (who.status !== 0 || !looksAuthed) {
     console.log("");
     console.log("Cloudflare login required.");
     if (opts.nonInteractive) {
