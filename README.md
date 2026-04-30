@@ -104,19 +104,19 @@ The full author → share loop, agent or hand-driven:
 npx edu-role-play init my-roleplay --archetype skeptical-buyer
 
 # 2. Validate it against the DNA rules
-npx edu-role-play lint my-roleplay.html
+npx edu-role-play lint my-roleplay.erp
 
 # 3. Iterate locally — runtime inlined, no auto-open
-npx edu-role-play preview my-roleplay.html
+npx edu-role-play preview my-roleplay.erp
 
 # 4. Bundle into a single self-contained HTML
-npx edu-role-play bundle my-roleplay.html
+npx edu-role-play bundle my-roleplay.erp
 
 # 5. Open the bundled HTML in your browser to try it
-npx edu-role-play start my-roleplay.html
+npx edu-role-play start my-roleplay.erp
 
 # 6. (Optional) Package as SCORM 1.2 for an LMS
-npx edu-role-play scorm my-roleplay.html
+npx edu-role-play scorm my-roleplay.erp
 ```
 
 ### Deploy your own proxy (for sharing)

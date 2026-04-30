@@ -22,8 +22,8 @@ program
 
 program
   .command("init")
-  .description("Scaffold a composition HTML file from an archetype or blank template.")
-  .argument("<name>", "name of the composition (file will be <name>.html)")
+  .description("Scaffold a composition source file from an archetype or blank template.")
+  .argument("<name>", "name of the composition (file will be <name>.erp)")
   .option("--archetype <id>", "archetype id to start from (e.g. skeptical-buyer)")
   .option("--force", "overwrite existing file", false)
   .action((name: string, opts) => {
@@ -33,7 +33,7 @@ program
 program
   .command("lint")
   .description("Validate a composition against DNA rules. Exits non-zero on error.")
-  .argument("<file>", "path to the composition HTML file")
+  .argument("<file>", "path to the composition source file (<name>.erp or <name>.html)")
   .action((file: string) => {
     process.exit(lintCommand(file));
   });
@@ -41,7 +41,7 @@ program
 program
   .command("bundle")
   .description("Inline the runtime into the composition, producing a self-contained HTML.")
-  .argument("<file>", "path to the composition HTML file")
+  .argument("<file>", "path to the composition source file (<name>.erp or <name>.html)")
   .option("-o, --output <path>", "output path (default: <input>.bundled.html)")
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
@@ -56,7 +56,7 @@ program
 program
   .command("start")
   .description("Bundle a composition (if needed) and open it in the default browser.")
-  .argument("<file>", "path to the composition HTML or a pre-bundled .bundled.html file")
+  .argument("<file>", "path to the composition source (<name>.erp or <name>.html) or a pre-bundled .html / .bundled.html file")
   .option("-o, --output <path>", "bundle output path (default: <input>.bundled.html)")
   .option("--model <id>", "model override (default: proxy picks default)")
   .option(
@@ -71,7 +71,7 @@ program
 program
   .command("preview")
   .description("Serve a composition locally with the runtime inlined. Agent-friendly (no auto-open).")
-  .argument("<file>", "path to the composition HTML file")
+  .argument("<file>", "path to the composition source file (<name>.erp or <name>.html)")
   .option("--port <n>", "port to listen on", "4310")
   .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
   .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY)")
@@ -85,7 +85,7 @@ program
 program
   .command("scorm")
   .description("Package a composition as a SCORM 1.2 ZIP with the runtime inlined.")
-  .argument("<file>", "path to the composition HTML file")
+  .argument("<file>", "path to the composition source file (<name>.erp or <name>.html)")
   .option("-o, --output <path>", "output path (default: <input>.scorm.zip)")
   .option("--title <title>", "SCORM manifest title (default: composition id)")
   .option("--model <id>", "model override (default: proxy picks default)")

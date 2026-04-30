@@ -85,7 +85,7 @@ Wrap the composition in the standard HTML shell below. The `<style>` block and t
   <div class="notice" data-erp-fallback>
     <h2>This role-play isn't bundled yet</h2>
     <p>Open a terminal in this folder and run:</p>
-    <pre><code>npx edu-role-play start my-roleplay.html</code></pre>
+    <pre><code>npx edu-role-play start my-roleplay.erp</code></pre>
   </div>
   <edu-persona name="Sarah Chen" role="VP of Operations">
     <background>15 years in logistics. Burned by a CRM migration in 2023.</background>
@@ -164,13 +164,13 @@ Failing any of these blocks `bundle`.
 
 Each role-play gets its own folder so files don't pile up in the user's working directory.
 
-1. Pick a short kebab-case slug (e.g. `gdpr-sar-audit`). Create the folder: the composition file path is `<slug>/<slug>.html`.
-2. Write the composition to `<slug>/<slug>.html`.
-3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.html`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
-4. **You** (the agent) run `npx -y edu-role-play bundle <slug>/<slug>.html` to produce the playable HTML in-place. Do not ask the user for an API key — bundling never needs one (keys live on the proxy, not in the HTML). If the environment cannot run `npx` (no shell, no network), fall back to instructing the user to run it themselves and skip section (a) below.
+1. Pick a short kebab-case slug (e.g. `gdpr-sar-audit`). Create the folder: the composition source file path is `<slug>/<slug>.erp`. The `.erp` extension (not `.html`) is intentional — it keeps editor / Claude Code app HTML previews from auto-opening the unbundled source. The bundled artifact users actually open is `<slug>/<slug>.html`.
+2. Write the composition to `<slug>/<slug>.erp`.
+3. **You** (the agent) run `npx -y edu-role-play lint <slug>/<slug>.erp`. Fix every error. Warnings (e.g. stale `runtime-version`) can stay but prefer to fix.
+4. **You** (the agent) run `npx -y edu-role-play bundle <slug>/<slug>.erp` to produce the playable `<slug>/<slug>.html`. Do not ask the user for an API key — bundling never needs one (keys live on the proxy, not in the HTML). If the environment cannot run `npx` (no shell, no network), fall back to instructing the user to run it themselves and skip section (a) below.
 5. Your final message after the first bundle MUST be light and bulleted — no walls of text, no technical detail about proxies, secrets, or runtime internals. Use this exact shape:
 
-   > Bundled. Run `npx edu-role-play start <slug>/<slug>.bundled.html` to try it.
+   > Bundled. Run `npx edu-role-play start <slug>/<slug>.html` to try it.
    >
    > - Tell me what to change if anything feels off (persona, objectives, rubric, scenario).
    > - When it's good, say the word and I'll set you up with your own API key + a SCORM zip you can upload to your LMS.
@@ -184,7 +184,7 @@ Each role-play gets its own folder so files don't pile up in the user's working 
 
    Do not explain what `deploy-proxy` does, what wrangler is, what a Worker secret is, or which env vars get set — the CLI itself prompts the user through it. Then run `deploy-proxy` for them. Once it returns a Worker URL, immediately:
    1. Re-bundle with `--proxy-url https://<their-worker>.workers.dev`.
-   2. Run `npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url https://<their-worker>.workers.dev`.
+   2. Run `npx -y edu-role-play scorm <slug>/<slug>.erp --proxy-url https://<their-worker>.workers.dev`.
    3. Report back in one short message:
       > Done. Your own key is wired up, and `<slug>/<slug>.scorm.zip` is ready to upload to your LMS (Moodle, Canvas, TalentLMS, SCORM Cloud, etc.).
 
@@ -193,7 +193,7 @@ Each role-play gets its own folder so files don't pile up in the user's working 
    > 2. In the Cloudflare dashboard → that Worker → **Settings → Variables and Secrets** → add `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as a **Secret**.
    > 3. Paste the Worker URL back to me.
 
-   When they paste the URL back, edit the bundled HTML to add `<meta name="edu-role-play-proxy" content="https://<their-worker>.workers.dev">` in `<head>`, then tell them how to get the SCORM zip — either by running `npx -y edu-role-play scorm <slug>/<slug>.html --proxy-url <url>` themselves, or (if they have no shell at all) point them at the CLI docs.
+   When they paste the URL back, edit the bundled HTML to add `<meta name="edu-role-play-proxy" content="https://<their-worker>.workers.dev">` in `<head>`, then tell them how to get the SCORM zip — either by running `npx -y edu-role-play scorm <slug>/<slug>.erp --proxy-url <url>` themselves, or (if they have no shell at all) point them at the CLI docs.
 
    **Track detection.** Default to Track A if `Bash` and `npx` are available; otherwise Track B. If unsure, ask: "Are you on the web (claude.ai) or in a terminal-capable environment?"
 

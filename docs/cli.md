@@ -28,16 +28,16 @@ See [../packages/proxy-worker/README.md](../packages/proxy-worker/README.md) for
 
 ```bash
 edu-role-play init demo --archetype skeptical-buyer
-edu-role-play start demo.html
+edu-role-play start demo.erp
 ```
 
 Or step-by-step for CI / scripted use:
 
 ```bash
-edu-role-play lint demo.html
-edu-role-play bundle demo.html -o demo.bundled.html
-edu-role-play scorm demo.html -o demo.scorm.zip
+edu-role-play lint demo.erp
+edu-role-play bundle demo.erp           # writes demo.html
+edu-role-play scorm demo.erp -o demo.scorm.zip
 ```
 
-Copy `demo.bundled.html` into any HTML host (static site, LMS HTML widget, etc.).
+Copy `demo.html` into any HTML host (static site, LMS HTML widget, etc.).
 Upload `demo.scorm.zip` to an LMS as a SCORM 1.2 package.

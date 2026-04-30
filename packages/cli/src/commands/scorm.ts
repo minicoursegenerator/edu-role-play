@@ -11,15 +11,16 @@ export function scormCommand(file: string, opts: ScormOptions): number {
   const bundled = buildBundledHtml(file, { ...opts, scorm: true });
   if (!bundled) return 1;
 
-  const id = safeId(bundled.id || basename(file, ".html"));
-  const title = opts.title?.trim() || bundled.id || basename(file, ".html");
+  const stem = basename(file).replace(/\.(erp|html)$/, "");
+  const id = safeId(bundled.id || stem);
+  const title = opts.title?.trim() || bundled.id || stem;
   const manifest = buildManifest(id, title);
   const zip = zipSync({
     "index.html": strToU8(bundled.output),
     "imsmanifest.xml": strToU8(manifest),
   });
 
-  const defaultOutput = bundled.path.replace(/(?:\.bundled)?\.html$/i, ".scorm.zip");
+  const defaultOutput = bundled.path.replace(/(?:\.bundled)?\.(erp|html)$/i, ".scorm.zip");
   const outPath = resolve(process.cwd(), opts.output ?? defaultOutput);
   writeFileSync(outPath, Buffer.from(zip));
   console.log(`SCORM package ${bundled.path} → ${outPath}.`);

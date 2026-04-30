@@ -110,7 +110,10 @@ export function buildBundledHtml(file: string, opts: BundleOptions): {
 export function bundleCommand(file: string, opts: BundleOptions): number {
   const bundled = buildBundledHtml(file, opts);
   if (!bundled) return 1;
-  const outPath = resolve(process.cwd(), opts.output ?? bundled.path.replace(/\.html$/, ".bundled.html"));
+  const defaultOut = bundled.path.endsWith(".erp")
+    ? bundled.path.replace(/\.erp$/, ".html")
+    : bundled.path.replace(/\.html$/, ".bundled.html");
+  const outPath = resolve(process.cwd(), opts.output ?? defaultOut);
   writeFileSync(outPath, bundled.output, "utf8");
   const hash = recordBundle(bundled.id, bundled.path, outPath, bundled.output);
   console.log(`Bundled ${bundled.path} → ${outPath} (hash ${hash}).`);

@@ -9,8 +9,12 @@ interface InitOptions {
 }
 
 export function initCommand(name: string, opts: InitOptions) {
-  const outPath = resolve(process.cwd(), name.endsWith(".html") ? name : `${name}.html`);
-  const id = name.replace(/\.html$/, "");
+  // Source files use the `.erp` extension so editor / Claude Code app previews
+  // don't auto-open the unbundled HTML. The bundled artifact users actually
+  // open in a browser is `<name>.html` (produced by `bundle` / `start`).
+  const hasKnownExt = /\.(erp|html)$/.test(name);
+  const outPath = resolve(process.cwd(), hasKnownExt ? name : `${name}.erp`);
+  const id = name.replace(/\.(erp|html)$/, "");
   if (existsSync(outPath) && !opts.force) {
     console.error(`Refusing to overwrite ${outPath}. Pass --force to replace.`);
     process.exit(1);
