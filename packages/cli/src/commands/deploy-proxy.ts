@@ -217,8 +217,12 @@ function needsWorkersDevSubdomain(run: CapturedRun): boolean {
 
 function extractOnboardingUrl(run: CapturedRun): string | null {
   const text = `${run.stdout}\n${run.stderr}`;
-  const m = text.match(/https:\/\/dash\.cloudflare\.com\/[a-f0-9]+\/workers\/onboarding/i);
-  return m ? m[0] : null;
+  // wrangler still prints the legacy `/workers/onboarding` path which 404s
+  // since Cloudflare moved Workers under "Workers & Pages". Rewrite it.
+  const m = text.match(/https:\/\/dash\.cloudflare\.com\/([a-f0-9]+)\/workers\/onboarding/i);
+  if (m) return `https://dash.cloudflare.com/${m[1]}/workers-and-pages/onboarding`;
+  const m2 = text.match(/https:\/\/dash\.cloudflare\.com\/[a-f0-9]+\/workers-and-pages\/onboarding/i);
+  return m2 ? m2[0] : null;
 }
 
 async function handleMissingSubdomain(
@@ -226,7 +230,7 @@ async function handleMissingSubdomain(
   opts: DeployProxyOptions,
 ): Promise<boolean> {
   const onboardingUrl =
-    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers/onboarding";
+    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers-and-pages/onboarding";
   console.log("");
   console.log("Cloudflare needs a *.workers.dev subdomain on your account before any Worker can publish.");
   console.log("This is a one-time setup — you pick a name (e.g. \"agent1-erp\") and confirm. It's free.");
