@@ -217,12 +217,13 @@ function needsWorkersDevSubdomain(run: CapturedRun): boolean {
 
 function extractOnboardingUrl(run: CapturedRun): string | null {
   const text = `${run.stdout}\n${run.stderr}`;
-  // wrangler still prints the legacy `/workers/onboarding` path which 404s
-  // since Cloudflare moved Workers under "Workers & Pages". Rewrite it.
-  const m = text.match(/https:\/\/dash\.cloudflare\.com\/([a-f0-9]+)\/workers\/onboarding/i);
-  if (m) return `https://dash.cloudflare.com/${m[1]}/workers-and-pages/onboarding`;
-  const m2 = text.match(/https:\/\/dash\.cloudflare\.com\/[a-f0-9]+\/workers-and-pages\/onboarding/i);
-  return m2 ? m2[0] : null;
+  // wrangler prints `/workers/onboarding`, but Cloudflare keeps shuffling that
+  // route — both `/workers/onboarding` and `/workers-and-pages/onboarding`
+  // currently break for new accounts. Send the user to the Workers & Pages
+  // overview, which reliably surfaces the "Set up your subdomain" prompt.
+  const m = text.match(/https:\/\/dash\.cloudflare\.com\/([a-f0-9]+)\/workers/i);
+  if (m) return `https://dash.cloudflare.com/${m[1]}/workers-and-pages`;
+  return null;
 }
 
 async function handleMissingSubdomain(
@@ -230,12 +231,13 @@ async function handleMissingSubdomain(
   opts: DeployProxyOptions,
 ): Promise<boolean> {
   const onboardingUrl =
-    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers-and-pages/onboarding";
+    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
   console.log("");
   console.log("Cloudflare needs a *.workers.dev subdomain on your account before any Worker can publish.");
   console.log("This is a one-time setup — you pick a name (e.g. \"agent1-erp\") and confirm. It's free.");
   console.log("");
   console.log(`Open: ${onboardingUrl}`);
+  console.log("On that page, click \"Set up your subdomain\" (or use the banner at the top).");
   if (opts.nonInteractive) {
     console.error("Re-run after registering the subdomain (or without --non-interactive to be guided through it).");
     return false;
