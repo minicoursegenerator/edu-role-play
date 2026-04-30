@@ -41,9 +41,41 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
   cpSync(templateDir, workDir, { recursive: true });
   console.log(`Staged proxy-worker → ${workDir}`);
 
-  // Probe wrangler. Don't auto-login; tell the user to run it themselves so
-  // the OAuth browser flow isn't fighting our stdin. wrangler whoami exits 0
-  // even when unauthenticated, so we also scan its output.
+  // Make sure wrangler is actually fetchable before we try to use it. On a
+  // fresh machine `npx --yes wrangler ...` has to download wrangler from npm
+  // first; if that fetch fails (no network, corporate proxy, old Node, npx
+  // cache permissions) the user sees our generic "wrangler login failed"
+  // message even though wrangler never ran. Probing here gives us a focused
+  // error and warms the npx cache so subsequent calls are fast.
+  console.log("Checking wrangler…");
+  const probe = spawnSync("npx", ["--yes", "wrangler", "--version"], {
+    cwd: workDir,
+    stdio: "pipe",
+    encoding: "utf8",
+  });
+  if (probe.status !== 0) {
+    const detail = `${probe.stdout ?? ""}${probe.stderr ?? ""}`.trim();
+    console.error("");
+    console.error("Could not run wrangler. Common causes:");
+    console.error("  • Node is too old (wrangler needs Node ≥ 18). Run `node -v` to check.");
+    console.error("  • No network / npm registry blocked (corporate proxy, firewall).");
+    console.error("  • Permission issue with the npx cache (~/.npm/_npx).");
+    console.error("");
+    console.error("Try one of:");
+    console.error("  npm install -g wrangler          # install once, then re-run deploy-proxy");
+    console.error("  npm config get registry          # confirm registry is reachable");
+    if (detail) {
+      console.error("");
+      console.error("wrangler output:");
+      console.error(detail);
+    }
+    return 1;
+  }
+  console.log(`  ${probe.stdout.trim() || "ok"}`);
+
+  // Probe wrangler auth. Don't auto-login; tell the user to run it themselves
+  // so the OAuth browser flow isn't fighting our stdin. wrangler whoami exits
+  // 0 even when unauthenticated, so we also scan its output.
   const hasCfToken = !!(process.env.CLOUDFLARE_API_TOKEN?.trim() || process.env.CF_API_TOKEN?.trim());
   const who = spawnSync("npx", ["--yes", "wrangler", "whoami"], {
     cwd: workDir,
@@ -73,7 +105,16 @@ export async function deployProxyCommand(opts: DeployProxyOptions): Promise<numb
       stdio: "inherit",
     });
     if (login.status !== 0) {
-      console.error("wrangler login failed.");
+      console.error("");
+      console.error("wrangler login did not complete. Common causes:");
+      console.error("  • Closed the browser tab before clicking Authorize.");
+      console.error("  • Took too long to authorize (the local OAuth callback timed out).");
+      console.error("  • Port 8976 is already in use (kill any leftover wrangler).");
+      console.error("  • Behind a firewall / VPN blocking dash.cloudflare.com.");
+      console.error("");
+      console.error("Try again, or skip OAuth with an API token:");
+      console.error("  export CLOUDFLARE_API_TOKEN=<token from dash.cloudflare.com → My Profile → API Tokens>");
+      console.error("  npx edu-role-play deploy-proxy");
       return 1;
     }
   }
