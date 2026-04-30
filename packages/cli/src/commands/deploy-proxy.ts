@@ -289,12 +289,12 @@ function needsWorkersDevSubdomain(run: CapturedRun): boolean {
 
 function extractOnboardingUrl(run: CapturedRun): string | null {
   const text = `${run.stdout}\n${run.stderr}`;
-  // wrangler prints `/workers/onboarding`, but Cloudflare keeps shuffling that
-  // route — both `/workers/onboarding` and `/workers-and-pages/onboarding`
-  // currently break for new accounts. Send the user to the Workers & Pages
-  // overview, which reliably surfaces the "Set up your subdomain" prompt.
+  // wrangler prints `/workers/onboarding`, which currently 404s. The reliable
+  // page is `/workers/subdomain` — Cloudflare auto-provisions a subdomain
+  // (usually based on the account email's local part) the first time the user
+  // visits it, so simply opening the page is often enough to unblock deploy.
   const m = text.match(/https:\/\/dash\.cloudflare\.com\/([a-f0-9]+)\/workers/i);
-  if (m) return `https://dash.cloudflare.com/${m[1]}/workers-and-pages`;
+  if (m) return `https://dash.cloudflare.com/${m[1]}/workers/subdomain`;
   return null;
 }
 
@@ -303,13 +303,14 @@ async function handleMissingSubdomain(
   opts: DeployProxyOptions,
 ): Promise<boolean> {
   const onboardingUrl =
-    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
+    extractOnboardingUrl(run) ?? "https://dash.cloudflare.com/?to=/:account/workers/subdomain";
   console.log("");
   console.log("Cloudflare needs a *.workers.dev subdomain on your account before any Worker can publish.");
-  console.log("This is a one-time setup — you pick a name (e.g. \"agent1-erp\") and confirm. It's free.");
+  console.log("Cloudflare usually auto-suggests one based on your account email — opening the page below");
+  console.log("often confirms / provisions it instantly. It's free and one-time.");
   console.log("");
   console.log(`Open: ${onboardingUrl}`);
-  console.log("On that page, click \"Set up your subdomain\" (or use the banner at the top).");
+  console.log("If the page already shows a subdomain, you're set — just come back here and press Y.");
   if (opts.nonInteractive) {
     console.error("Re-run after registering the subdomain (or without --non-interactive to be guided through it).");
     return false;
