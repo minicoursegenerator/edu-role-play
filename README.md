@@ -1,5 +1,7 @@
 # edu-role-play
 
+https://github.com/user-attachments/assets/6cbc1229-82f3-4c5f-84f0-fb085b393784
+
 Generate interactive AI role-play training activities as self-contained HTML. Built for AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) via the [Agent Skills](https://agentskills.io) open standard.
 
 A role-play here means a learner-vs-AI-character drill — sales pitches, customer de-escalation, compliance interviews, manager coaching, clinical intake, anything where a person needs to practice a conversation against a believable counterpart with clear objectives and a rubric. The output is one HTML file you can paste anywhere that accepts HTML.
@@ -228,8 +230,6 @@ No terminal? There's a one-click [Deploy to Cloudflare](https://deploy.workers.c
 - [`docs/`](docs/) — user-facing docs ([getting-started](docs/getting-started.md), [composition-format](docs/composition-format.md), [cli](docs/cli.md), [sharing](docs/sharing.md), [scorm](docs/scorm.md), [design-system](docs/design-system.md), [publishing](docs/publishing.md)).
 - [`registry/`](registry/) — reserved for a future browsable archetype catalog.
 - [`scripts/`](scripts/) — build and utility scripts.
-
-Mirrors the [HyperFrames](https://github.com/heygen-com/hyperframes) packaging: HTML-first composition format with custom elements, self-contained bundled artifacts, agent-invoked CLI, skills under `skills/`, packages under `packages/`.
 
 ## FAQ
 
