@@ -1,47 +1,82 @@
 # edu-role-play
 
+> Type a prompt, get a SCORM-ready AI role-play with persona, rubric, and scoring. Open-source Agent Skill for L&D teams and educators. Free, MIT, by [Mini Course Generator](https://minicoursegenerator.com).
+
 https://github.com/user-attachments/assets/6cbc1229-82f3-4c5f-84f0-fb085b393784
 
-Generate interactive AI role-play training activities as self-contained HTML. Built for AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) via the [Agent Skills](https://agentskills.io) open standard.
+A role-play here means a learner-vs-AI-character drill — sales pitches, customer de-escalation, compliance interviews, manager coaching, clinical intake — anywhere a person needs to practice a conversation against a believable counterpart with clear objectives and a rubric. Output is one self-contained HTML file you can drop into any LMS, or export as SCORM 1.2.
 
-A role-play here means a learner-vs-AI-character drill — sales pitches, customer de-escalation, compliance interviews, manager coaching, clinical intake, anything where a person needs to practice a conversation against a believable counterpart with clear objectives and a rubric. The output is one HTML file you can paste anywhere that accepts HTML.
+[Examples](#examples) · [Why this exists](#why-this-exists) · [Use with any LMS](#use-with-any-lms) · [Quick start](#quick-start) · [How it works](#how-it-works) · [FAQ](#faq)
+
+---
+
+## Examples
+
+Three live role-plays you can try in your browser. Open the link, run a session end-to-end, get scored:
+
+- **[Manager performance feedback](https://minicoursegenerator.github.io/edu-role-play/showcase/performance-feedback.html)** — A senior engineer giving difficult feedback to a junior team member who's missed deadlines.
+- **[Sales objection handling](https://minicoursegenerator.github.io/edu-role-play/showcase/sales-objection.html)** — An account exec navigating a price objection from a skeptical VP of Operations.
+- **[Customer de-escalation](https://minicoursegenerator.github.io/edu-role-play/showcase/customer-deescalation.html)** — A support agent handling an angry customer who escalated from chat to a call.
+
+Each one was authored from a single prompt, bundled to one HTML file, runs in any browser. Source compositions live in [`compositions/`](compositions/).
+
+## Why this exists
+
+LLMs can already do role-play. Generic AI chat can't.
+
+If you've tried using ChatGPT or Claude as a role-play partner inside a corporate training program, you know the failure modes: the AI character drifts out of role after 4 turns, there's no way to score the conversation against a rubric, and the output doesn't go into your LMS. So L&D teams either ship soft simulations that don't move the needle, or fall back to live role-plays that don't scale.
+
+edu-role-play closes that gap. Structured persona that holds across the session. Objective tracking turn-by-turn. Rubric scoring at session end. SCORM export to any LMS. All authored from a single prompt by an AI coding agent — Claude Code, Cursor, Gemini CLI, Codex — using Anthropic's open [Agent Skills](https://agentskills.io) standard.
+
+Built and maintained by [Mini Course Generator](https://minicoursegenerator.com). Free, MIT licensed, no upsell.
+
+## Use with any LMS
+
+Bundle as plain HTML or SCORM 1.2. Tested with Moodle, Canvas, Cornerstone, SAP SuccessFactors, MCG, and SCORM Cloud — works in anything that accepts SCORM 1.2 packages.
+
+```bash
+npx edu-role-play scorm my-roleplay.erp
+```
+
+Output is a `.zip` you upload as a SCORM activity. The role-play runs in the LMS iframe, scores report through the SCORM API, completion lands in your gradebook. No additional integration needed.
+
+Full SCORM guide: [docs/scorm.md](docs/scorm.md).
+
+## Features
 
 - **Agent-first authoring.** Describe the scenario in plain language; the skill writes a structured composition, lints it against pedagogical rules, and bundles it.
 - **Single-file output.** No build step on the consumer side. Drop the HTML into an LMS, a static site, or a [Mini Course Generator](https://minicoursegenerator.com) Freeform Card.
 - **No API keys in the HTML.** Inference goes through a Cloudflare Worker proxy you deploy once.
 - **LMS-ready.** Bundle as plain HTML or as a SCORM 1.2 package.
-- **Open format.** Compositions are HTML with custom elements (`<edu-role-play>`, `<edu-persona>`, `<edu-objective>`, `<edu-rubric>`, …) — diff-able, version-controllable, hand-editable.
-
-## Why this exists
-
-LLMs can already do role-play, but generic chat doesn't translate into corporate training. Personas drift after 4 turns, output doesn't go to your LMS, and there's no rubric for the learner. edu-role-play closes that gap: structured persona, scored rubric, SCORM export. Open source so you own it. Built on Anthropic's Agent Skills standard, so it works in Claude Code, Cursor, Gemini CLI, or any agent that reads SKILL.md files.
+- **Open format.** Compositions are HTML with custom elements (`<edu-role-play>`, `<edu-persona>`, `<edu-objective>`, `<edu-rubric>`) — diff-able, version-controllable, hand-editable.
 
 ## Table of contents
 
-- [Why this exists](#why-this-exists)
-- [Examples](#examples)
-- [Install](#install)
 - [Quick start](#quick-start)
+- [Install](#install)
 - [Prompting patterns](#prompting-patterns)
 - [How it works](#how-it-works)
 - [Composition format](#composition-format)
 - [The CLI flow](#the-cli-flow)
 - [Inference & sharing](#inference--sharing)
-- [Export to SCORM](#export-to-scorm)
 - [Repository layout](#repository-layout)
 - [FAQ](#faq)
 - [Maintainers](#maintainers)
 - [License](#license)
 
-## Examples
+## Quick start
 
-Live demos you can try in your browser:
+In your AI coding agent (Claude Code, Cursor, Gemini CLI, Codex), invoke the skill and describe the role-play you want:
 
-- [Manager performance feedback](https://minicoursegenerator.github.io/edu-role-play/demos/performance-feedback.html) — Engineering manager giving difficult feedback to a junior team member
-- [Sales objection handling](https://minicoursegenerator.github.io/edu-role-play/demos/sales-objection.html) — Account exec navigating a price objection
-- [Customer de-escalation](https://minicoursegenerator.github.io/edu-role-play/demos/customer-deescalation.html) — Support specialist handling an angry customer
+```
+Using /edu-role-play, create a role-play where a sales rep practices
+pitching our CRM to a skeptical VP of Operations at a mid-market
+logistics company.
+```
 
-Each is a single self-contained HTML file built from the source compositions in [`compositions/`](compositions/). Inference goes through the shared, rate-limited Cloudflare Worker — fine for trying things out, but deploy your own with `npx edu-role-play deploy-proxy` for anything beyond a demo.
+The agent scaffolds the composition, validates it, and bundles it into a single self-contained HTML file. Paste that HTML into a Freeform Card in any [Mini Course Generator](https://minicoursegenerator.com) course — or host it anywhere that accepts HTML.
+
+Working examples to read or remix live in [`compositions/`](compositions/).
 
 ## Install
 
@@ -82,20 +117,6 @@ Then use the CLI directly: `npx edu-role-play <command>`. See [The CLI flow](#th
 - Node.js 18+ for the CLI.
 - A Cloudflare account if you want to deploy your own inference proxy (free tier is enough for prototyping).
 - An Anthropic or OpenAI API key if you want higher-quality models than Cloudflare Workers AI.
-
-## Quick start
-
-In your agent, invoke the skill and describe the role-play you want:
-
-```
-Using /edu-role-play, create a role-play where a sales rep practices
-pitching our CRM to a skeptical VP of Operations at a mid-market
-logistics company.
-```
-
-The agent scaffolds the composition, validates it, and bundles it into a single self-contained HTML file. Paste that HTML into a Freeform Card in any [Mini Course Generator](https://minicoursegenerator.com) course — or host it anywhere that accepts HTML.
-
-Working examples to read or remix live in [`compositions/`](compositions/).
 
 ## Prompting patterns
 
@@ -142,7 +163,6 @@ author prompt
                                                  ▼
                                        Cloudflare Worker proxy
                                                  │
-                                                 ▼
                                   Workers AI / Anthropic / OpenAI
 ```
 
@@ -188,7 +208,7 @@ Full reference: [docs/composition-format.md](docs/composition-format.md). Author
 
 ## The CLI flow
 
-The full author → share loop, agent or hand-driven:
+The full author → share path, agent or hand-driven:
 
 ```bash
 # 1. Scaffold a composition from an archetype (or start blank)
@@ -232,19 +252,9 @@ No terminal? There's a one-click [Deploy to Cloudflare](https://deploy.workers.c
 
 | Provider     | Cost                          | Quality for role-play | Setup |
 | ------------ | ----------------------------- | --------------------- | ----- |
-| Workers AI   | Free tier (~10k Neurons/day) | OK — Llama-class      | Zero keys |
+| Workers AI   | Free tier (~10k Neurons/day)  | OK — Llama-class      | Zero keys |
 | Anthropic    | Pay per token (your key)      | Best                  | One paste |
 | OpenAI       | Pay per token (your key)      | Good                  | One paste |
-
-## Export to SCORM
-
-Bundle your role-play as SCORM 1.2 to upload to any LMS (Moodle, Canvas, Cornerstone, SAP SuccessFactors, MCG, etc.):
-
-```bash
-npx skills bundle YOUR-ROLEPLAY --scorm
-```
-
-This produces a `.zip` file. Upload it as a SCORM activity in your LMS. The role-play runs in an iframe, scores get reported via SCORM API, completion tracked in your LMS gradebook.
 
 ## Repository layout
 
@@ -260,11 +270,17 @@ This produces a `.zip` file. Upload it as a SCORM activity in your LMS. The role
 
 ## FAQ
 
+**I'm an L&D person, not a developer. Can I use this?**
+Today, the smoothest path is to ask someone on your team who's comfortable with a terminal to install the skill once and bundle role-plays for you. The CLI takes 5 minutes to install, and once it's set up, authoring is plain-language prompts in an AI agent. We're working on a no-terminal authoring path for non-technical users — see the [roadmap](#roadmap).
+
 **Does the bundled HTML need an internet connection?**
 Yes — it calls your proxy Worker for inference. Everything else (UI, runtime, scoring logic) is inlined and runs offline.
 
 **Where does the API key live?**
 On the Worker, as a Cloudflare secret. Never in the HTML, never in the learner's browser.
+
+**Which LMSes have you tested with?**
+Moodle, Canvas, Cornerstone, SAP SuccessFactors, MCG, SCORM Cloud. Anything that accepts SCORM 1.2 should work — file an issue if you hit a problem with a specific LMS.
 
 **Can I edit a composition by hand instead of through an agent?**
 Yes. It's plain HTML with custom elements. Run `npx edu-role-play lint <file>` to check it.
@@ -280,6 +296,18 @@ Anthropic Claude (Sonnet or Opus) for serious scenarios; Workers AI Llama varian
 
 **Can I version-control compositions?**
 Yes — they're text. Diffs are readable; PR review works fine.
+
+**Is this only for role-plays?**
+For now, yes. edu-role-play is the first skill in a series. The next one, focused on structured AI lessons, ships in a few weeks. Star the repo or follow [@erengunduzz](https://twitter.com/erengunduzz) for updates.
+
+## Roadmap
+
+- **No-terminal authoring path** for L&D teams who don't want to install a CLI — likely a hosted MCG flow that produces the same bundled HTML.
+- **More skills.** edu-role-play is the first. Next up: structured AI lessons (concept explainers, quiz generators). One every 1-2 weeks.
+- **Browsable archetype registry.** Curated starter scenarios for common L&D use cases (sales, manager training, customer service, compliance, clinical).
+- **Analytics export.** Per-learner score history, time-on-task, objective completion rates, exportable to CSV or xAPI.
+
+Open an [issue](https://github.com/minicoursegenerator/edu-role-play/issues) if there's something specific you'd want to use this for and we'll see what we can prioritize.
 
 ## Maintainers
 
