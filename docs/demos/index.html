@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>edu-role-play demos</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; line-height: 1.55; color: #111; }
+      h1 { font-size: 24px; margin: 0 0 8px; }
+      p { color: #444; }
+      ul { padding-left: 18px; }
+      li { margin: 10px 0; }
+      a { color: #0b5fff; }
+      code { font-family: ui-monospace, monospace; background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+      .sub { color: #6b7280; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <h1>edu-role-play demos</h1>
+    <p>Live, in-browser role-plays generated with <a href="https://github.com/minicoursegenerator/edu-role-play">edu-role-play</a>. Each is a single self-contained HTML file.</p>
+    <ul>
+      <li><a href="performance-feedback.html">Manager performance feedback</a> <span class="sub">— Engineering manager giving difficult feedback to a junior team member.</span></li>
+      <li><a href="sales-objection.html">Sales objection handling</a> <span class="sub">— Account exec navigating a price objection from a RevOps director.</span></li>
+      <li><a href="customer-deescalation.html">Customer de-escalation</a> <span class="sub">— Support specialist handling an angry customer with a broken release.</span></li>
+    </ul>
+    <p class="sub">Inference goes through a shared, rate-limited Cloudflare Worker. For your own deployments, run <code>npx edu-role-play deploy-proxy</code>.</p>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>example-performance-feedback</title>
+    <style>
+      edu-role-play > :not([data-erp-fallback]) { display: none; }
+      [data-erp-fallback].notice { display: block; font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; line-height: 1.5; }
+      [data-erp-fallback] h2 { margin: 0 0 8px 0; font-size: 18px; }
+      [data-erp-fallback] pre { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <edu-role-play id="example-performance-feedback" runtime-version="0.1.0">
+      <div class="notice" data-erp-fallback>
+        <h2>This role-play isn't bundled yet</h2>
+        <p>Open a terminal in this folder and run:</p>
+        <pre><code>npx edu-role-play bundle example-performance-feedback.html</code></pre>
+      </div>
+
+      <edu-persona name="Jordan Park" role="Junior software engineer (18 months on the team)">
+        <background>Promising engineer hired straight out of a bootcamp. Ships features fast but the last two PRs caused production incidents — one paged the on-call team at 2am. Hasn't been told directly that this is a problem; has only seen comments on the PRs themselves. Believes they're tracking for a promotion next cycle and recently asked a peer about the senior-engineer ladder.</background>
+        <goals>Understand exactly what the manager is unhappy about. Leave the meeting knowing whether the promotion conversation is still on the table. Avoid feeling humiliated.</goals>
+        <constraints>Defensive in the first two turns — will mention how fast they ship and how other engineers also broke things. Softens only if the manager names specific incidents and separates the behaviour from the person. Shuts down completely if the feedback feels personal or vague ("you need to be more careful").</constraints>
+        <speech-patterns>Polite but guarded. Uses "I feel like" a lot. Asks "is this a performance issue?" within the first three turns. Goes quiet — short, one-line replies — when hurt.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are the engineering manager. You've scheduled a 1:1 with Jordan Park to give difficult feedback: the last two production incidents both traced back to PRs Jordan merged without test coverage on the failure path, and the on-call rotation is starting to complain. You have about 15 minutes. The goal is for Jordan Park to leave with a clear, specific picture of what needs to change, an agreed next step, and the relationship intact.
+      </edu-scenario>
+
+      <edu-objective id="name-specifics">Name both incidents specifically — what shipped, what broke, the on-call impact — instead of generic "quality concerns".</edu-objective>
+      <edu-objective id="separate-person-from-behavior">Separate the behaviour from Jordan as a person. Acknowledge their strengths (shipping speed) before and after the hard part.</edu-objective>
+      <edu-objective id="address-promotion">Directly address the promotion question once Jordan raises it — don't dodge, don't over-promise.</edu-objective>
+      <edu-objective id="agree-next-step">Land on a concrete next step Jordan agrees to (e.g. pairing on test plans for the next two PRs, a 30-day check-in).</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="name-specifics" weight="3">Full credit (3): both incidents named with what broke and who it affected, before Jordan has to ask.</criterion>
+        <criterion objective="separate-person-from-behavior" weight="3">Full credit (3): explicit acknowledgement of Jordan's strengths; feedback framed around specific behaviours, not character.</criterion>
+        <criterion objective="address-promotion" weight="2">Full credit (2): gives Jordan a clear, honest read on where promotion stands — neither false reassurance nor a closed door.</criterion>
+        <criterion objective="agree-next-step" weight="2">Full credit (2): next step has a concrete action, owner, and timeframe; Jordan verbally agrees.</criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>16</turn-limit>
+        <objective-check-every>1</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>
