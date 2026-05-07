@@ -12,7 +12,7 @@ interface PreviewOptions {
   provider?: string;
 }
 
-const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const DEFAULT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 export function previewCommand(file: string, opts: PreviewOptions): number {
   const path = resolve(process.cwd(), file);

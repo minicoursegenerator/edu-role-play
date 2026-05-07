@@ -76,7 +76,7 @@ program
   .option("--provider <id>", "inference provider (cloudflare)", "cloudflare")
   .option("--api-key <key>", "API key (or set EDU_ROLE_PLAY_API_KEY)")
   .option("--account-id <id>", "Cloudflare account id (or set CLOUDFLARE_ACCOUNT_ID)")
-  .option("--model <id>", "model id (default @cf/meta/llama-3.1-8b-instruct)")
+  .option("--model <id>", "model id (default @cf/meta/llama-3.3-70b-instruct-fp8-fast)")
   .action((file: string, opts) => {
     const code = previewCommand(file, opts);
     if (code !== 0) process.exit(code);

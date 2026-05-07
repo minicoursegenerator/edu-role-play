@@ -12,7 +12,7 @@ Validates the composition. Accepts a `.erp` source or a `.html` file. Exits 0 on
 
 ## `edu-role-play bundle <file> [-o <out>] [--model <id>] [--proxy-url <url>] [--skip-lint]`
 
-Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.html` for `.erp` sources, `<file>.bundled.html` for legacy `.html` sources. Model defaults to whatever the proxy picks (`@cf/meta/llama-3.1-8b-instruct`) — pass `--model` only to override.
+Runs lint (unless `--skip-lint`), then writes a self-contained HTML with the runtime and config inlined. Default output: `<file>.html` for `.erp` sources, `<file>.bundled.html` for legacy `.html` sources. Model defaults to whatever the proxy picks (`@cf/meta/llama-3.3-70b-instruct-fp8-fast`) — pass `--model` only to override.
 
 **No API key is ever baked into the HTML.** The bundle calls `POST {proxy}/v1/chat` on the project's Cloudflare Worker proxy, which forwards to Cloudflare Workers AI through its `env.AI` binding (no token needed). Learners can optionally switch to their own key at runtime via the BYO-key UI (stored in browser localStorage, not in the HTML).
 

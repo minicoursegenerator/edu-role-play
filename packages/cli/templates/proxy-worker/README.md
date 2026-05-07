@@ -8,7 +8,7 @@ The Worker picks a backend at request time based on which secrets are bound (hig
 
 1. `ANTHROPIC_API_KEY` set → calls Anthropic Messages API (default model `claude-haiku-4-5-20251001`).
 2. `OPENAI_API_KEY` set → calls OpenAI Chat Completions (default model `gpt-4o-mini`).
-3. Neither set → calls Cloudflare Workers AI via `env.AI` (default `@cf/meta/llama-3.1-8b-instruct`).
+3. Neither set → calls Cloudflare Workers AI via `env.AI` (default `@cf/meta/llama-3.3-70b-instruct-fp8-fast`).
 
 The Workers AI mode needs no API key, account id, or token — auth is the binding itself. BYO modes hold the creator's key as a Cloudflare Worker secret; learners' bundles never see it.
 
@@ -59,7 +59,7 @@ Content-Type: application/json
 
 {
   "messages": [{ "role": "user", "content": "..." }],
-  "model":   "@cf/meta/llama-3.1-8b-instruct",   // optional
+  "model":   "@cf/meta/llama-3.3-70b-instruct-fp8-fast",   // optional
   "temperature": 0.7,                             // optional, clamped 0..2
   "maxTokens": 512                                // optional, capped at 1024
 }
