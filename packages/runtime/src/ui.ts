@@ -85,10 +85,10 @@ textarea { font: inherit; color: inherit; }
 .avatar.you { background: oklch(52% 0.20 255); }
 
 /* Chat log */
-.chat-area { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
+.chat-area { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 0; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; }
 .chat-inner {
   max-width: 680px; margin: 0 auto; padding: 0 16px 16px; width: 100%;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 14px; margin-top: auto;
 }
 .chat-inner.wide { max-width: none; padding: 16px; }
 
@@ -1067,9 +1067,20 @@ export class UI {
     if (exportBtn) exportBtn.disabled = !this.resultsReady;
   }
 
+  private shouldAutoScroll(area: HTMLElement): boolean {
+    // Only auto-scroll if user is within 60px of the bottom
+    return area.scrollHeight - area.scrollTop - area.clientHeight < 60;
+  }
+
+  private scrollToBottom(area: HTMLElement): void {
+    area.scrollTop = area.scrollHeight;
+  }
+
   private renderMessages(): void {
     const log = this.root.querySelector("[data-log]") as HTMLElement | null;
     if (!log) return;
+    const area = log.parentElement;
+    const autoScroll = area ? this.shouldAutoScroll(area) : true;
     log.innerHTML = this.messages
       .map((m) => {
         if (m.role === "system-note") {
@@ -1090,8 +1101,7 @@ export class UI {
       })
       .join("");
     this.renderTyping();
-    const area = log.parentElement;
-    if (area) area.scrollTop = area.scrollHeight;
+    if (area && autoScroll) this.scrollToBottom(area);
     this.updateTimerDisplay();
   }
 
@@ -1110,7 +1120,7 @@ export class UI {
       `;
       log.appendChild(row);
       const area = log.parentElement;
-      if (area) area.scrollTop = area.scrollHeight;
+      if (area && this.shouldAutoScroll(area)) this.scrollToBottom(area);
     } else if (existing) {
       existing.remove();
     }

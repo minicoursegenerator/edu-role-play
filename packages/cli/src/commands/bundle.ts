@@ -24,14 +24,16 @@ function stripFallback(html: string): string {
     /[ \t]*<div\b[^>]*\bdata-erp-fallback\b[^>]*>[\s\S]*?<\/div>[ \t]*\n?/gi,
     "",
   );
-  // Drop CSS rules referencing [data-erp-fallback]. We operate only inside
-  // <style> blocks and rebuild the body by dropping each top-level rule whose
-  // selector contains the attribute (handles both the ":not([data-erp-fallback])"
-  // hide-everything rule and the notice-styling rules).
+  // Drop CSS rules referencing [data-erp-fallback] but KEEP the
+  // `:not([data-erp-fallback])` rule — it prevents flash of raw content.
+  // Replace it with a generic hide-everything rule instead.
   out = out.replace(
     /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
     (match, open: string, body: string, close: string) => {
-      const cleaned = stripFallbackRules(body);
+      let cleaned = stripFallbackRules(body);
+      // Add a rule to hide raw content until the runtime mounts
+      const hideRule = "edu-role-play > * { display: none !important; }";
+      cleaned = hideRule + "\n" + cleaned;
       return `${open}${cleaned}${close}`;
     },
   );
@@ -54,7 +56,7 @@ function stripFallbackRules(css: string): string {
     }
     const selector = css.slice(i, braceOpen);
     const rule = css.slice(i, braceClose + 1);
-    if (selector.includes("[data-erp-fallback]")) {
+    if (selector.includes("[data-erp-fallback]") && !selector.includes(":not([data-erp-fallback])")) {
       // Skip this rule and any single trailing newline so we don't leave a
       // run of blank lines behind.
       let skip = braceClose + 1;
