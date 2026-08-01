@@ -42,10 +42,15 @@ export function readCompositionFromDom(root: Element): CompositionData {
       title: el.getAttribute("title") ?? undefined,
       body: (el.textContent ?? "").trim(),
     })),
-    objectives: Array.from(root.querySelectorAll("edu-objective")).map((el) => ({
-      id: el.getAttribute("id") ?? "",
-      text: (el.textContent ?? "").trim(),
-    })),
+    objectives: Array.from(root.querySelectorAll("edu-objective")).map((el) => {
+      const text = (el.textContent ?? "").trim();
+      const detectAttr = el.getAttribute("detect");
+      return {
+        id: el.getAttribute("id") ?? "",
+        text,
+        detectText: detectAttr || text, // AI-facing version, falls back to human text
+      };
+    }),
     rubric: Array.from(root.querySelectorAll("edu-rubric criterion")).map((el) => ({
       objectiveId: el.getAttribute("objective") ?? "",
       weight: Number(el.getAttribute("weight") ?? "0"),

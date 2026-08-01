@@ -99,9 +99,28 @@ Wrap the composition in the standard HTML shell below. The `<style>` block and t
     uncover a pain point, quantify its impact, and secure a follow-up meeting.
   </edu-scenario>
 
-  <edu-objective id="discover-pain">Surface at least one current operational pain point Sarah owns.</edu-objective>
-  <edu-objective id="quantify-impact">Get Sarah to share a number (dollars, hours, or headcount).</edu-objective>
-  <edu-objective id="book-followup">Secure a concrete follow-up meeting (date + attendees).</edu-objective>
+  <!--
+    OBJECTIVE `detect` ATTRIBUTE:
+    The visible text is shown to learners in the sidebar.
+    The `detect` attribute is the AI-facing version — be more specific.
+    Include COUNTS (examples, not exhaustive) and DOES NOT COUNT
+    (anti-patterns) to eliminate false positives.
+    Mark COUNTS as "these are EXAMPLES, not exhaustive" so the detector
+    remains flexible for valid on-topic responses that don't use exact
+    keywords from the examples list.
+  -->
+  <edu-objective id="discover-pain"
+    detect="Surface a specific operational pain point. COUNTS (examples, not exhaustive): concrete process problems, team bottlenecks, tool limitations, workflow inefficiencies, team friction points. DOES NOT COUNT: greetings, pleasantries, off-topic chat, self-introductions without probing. Count any on-topic question about operational challenges — do not require specific keywords from the examples list.">
+    Surface at least one current operational pain point Sarah owns.
+  </edu-objective>
+  <edu-objective id="quantify-impact"
+    detect="Get a specific measurable impact. COUNTS (examples): dollar amounts, time lost, headcount, revenue impact, customer churn. DOES NOT COUNT: vague references without numbers, general chatting without quantification.">
+    Get Sarah to share a number (dollars, hours, or headcount).
+  </edu-objective>
+  <edu-objective id="book-followup"
+    detect="Secure a concrete follow-up. COUNTS (examples): specific date, named attendees, clear next step, agreed owner. DOES NOT COUNT: 'let's talk later' without specifics.">
+    Secure a concrete follow-up meeting (date + attendees).
+  </edu-objective>
 
   <edu-rubric>
     <criterion objective="discover-pain" weight="3">Full credit: pain is specific, Sarah-owned, and tied to a process.</criterion>

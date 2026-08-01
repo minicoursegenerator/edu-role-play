@@ -29,7 +29,8 @@ export interface PersonaData {
 
 export interface ObjectiveData {
   id: string;
-  text: string;
+  text: string;         // Human-facing (shown in sidebar)
+  detectText: string;   // AI-facing (used by detector — more specific)
 }
 
 export interface CriterionData {
@@ -72,6 +73,7 @@ export interface ChatMessage {
 
 export interface ChatOpts {
   temperature?: number;
+  jsonMode?: boolean;  // requests response_format: { type: "json_object" }
 }
 
 export interface Provider {
@@ -90,6 +92,20 @@ export interface TranscriptEntry {
   role: "user" | "assistant";
   content: string;
 }
+
+export enum ObjectiveState {
+  NotMet = 0,
+  Partial = 1,
+  Complete = 2,
+}
+
+export interface ObjectiveStatus {
+  state: ObjectiveState;
+  count?: string;        // e.g. "1/2" for partial progress
+  evidence?: string;     // quoted transcript text supporting the verdict
+}
+
+export type ObjectiveStatusMap = Map<string, ObjectiveStatus>;
 
 export interface ActivityEvent {
   type:

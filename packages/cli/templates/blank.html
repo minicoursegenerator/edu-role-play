@@ -52,15 +52,35 @@
         Describe the setting and what the learner is trying to accomplish.
       </edu-scenario>
 
-      <edu-objective id="objective-one">State an observable action the learner must take.</edu-objective>
-      <edu-objective id="objective-two">Another observable action.</edu-objective>
+      <!--
+        OBJECTIVE WRITING GUIDE:
+        The visible text (between tags) is what the student sees in the sidebar.
+        Use the `detect` attribute for a more specific AI-facing version that
+        the detection LLM uses. This keeps the student view natural while
+        giving the detector concrete anchors and counter-examples.
+        
+        COUNTS should be marked as "examples, not exhaustive" so the detector
+        remains flexible for valid on-topic responses that don't use exact
+        keywords from the examples list.
+        
+        Good:
+          Text: "Ask about her personal experience of conversion."
+          detect="Ask what she felt/heard during Paul's preaching, how she decided
+                  to be baptised, or what changed afterward. COUNTS (examples, not
+                  exhaustive): feelings at baptism, what convinced her, household
+                  reaction. DOES NOT COUNT: greetings, jokes, water requests,
+                  unrelated chat. Count any on-topic question about conversion —
+                  do not require specific keywords from the examples list."
+      -->
+      <edu-objective id="objective-one" detect="[AI-facing — specific examples + counter-examples. See guide above.]">[Student-facing — natural, role-play friendly. Shown in sidebar.]</edu-objective>
+      <edu-objective id="objective-two" detect="[AI-facing — specific examples + counter-examples.]">[Student-facing — natural, role-play friendly.]</edu-objective>
 
       <edu-rubric>
         <criterion objective="objective-one" weight="3">
-          How full credit looks vs. partial vs. none.
+          Full credit (3): Learner asks N+ specific questions that reference [DETAIL]. Partial (1-2): One specific question, rest are vague. Zero: Greetings or off-topic chat.
         </criterion>
         <criterion objective="objective-two" weight="3">
-          How full credit looks vs. partial vs. none.
+          Full credit (3): Learner asks about [SPECIFIC ASPECT]. Partial (1-2): Learner touches on it but moves on too quickly. Zero: Learner doesn't address it at all.
         </criterion>
       </edu-rubric>
 

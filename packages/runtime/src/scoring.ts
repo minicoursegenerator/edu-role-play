@@ -1,4 +1,5 @@
 import type { ChatMessage, CompositionData, Provider, ScoreResult } from "./types";
+import { ObjectiveState, type ObjectiveStatusMap } from "./types";
 
 function extractJsonObject(text: string): unknown {
   const match = text.match(/\{[\s\S]*\}/);
@@ -38,6 +39,7 @@ export async function scoreTranscript(
   provider: Provider,
   comp: CompositionData,
   history: ChatMessage[],
+  completedObjectives?: ObjectiveStatusMap,
 ): Promise<ScoreResult> {
   const prompt = buildScoringPrompt(comp, history);
   const messages: ChatMessage[] = [
@@ -47,7 +49,7 @@ export async function scoreTranscript(
 
   let reply = "";
   try {
-    reply = await provider.chat(messages, { temperature: 0 });
+    reply = await provider.chat(messages, { temperature: 0, jsonMode: true });
   } catch (e) {
     reply = "";
   }
@@ -58,7 +60,7 @@ export async function scoreTranscript(
   if (!parsed || !Array.isArray(parsed.perObjective)) {
     // retry once
     try {
-      reply = await provider.chat(messages, { temperature: 0 });
+      reply = await provider.chat(messages, { temperature: 0, jsonMode: true });
       parsed = extractJsonObject(reply) as typeof parsed;
     } catch {
       /* swallow */
@@ -72,12 +74,21 @@ export async function scoreTranscript(
     const w = weights.get(o.id) ?? 0;
     const found = parsed?.perObjective?.find((p) => p.id === o.id);
     const rawScore = Number(found?.score);
-    const score = Number.isFinite(rawScore) ? Math.max(0, Math.min(w, Math.round(rawScore))) : 0;
+    const aiScore = Number.isFinite(rawScore) ? Math.max(0, Math.min(w, Math.round(rawScore))) : 0;
+    // Fall back to objective detector if AI scoring returned 0 but detector marked it complete
+    const prior = completedObjectives?.get(o.id);
+    // If AI scorer returns 0 but detector found partial or complete evidence, use detector as floor
+    const detectorFloor = prior
+      ? prior.state === ObjectiveState.Complete
+        ? Math.max(1, Math.ceil(w * 0.75))  // Complete → at least 75%
+        : Math.max(1, Math.ceil(w * 0.25))  // Partial → at least 25%
+      : 0;
+    const score = aiScore > 0 ? aiScore : detectorFloor;
     return {
       id: o.id,
       score,
       maxScore: w,
-      improvement: found?.improvement?.trim() || "No feedback returned.",
+      improvement: found?.improvement?.trim() || (prior ? `Detected: ${prior.evidence || "evidence found during conversation"}` : "No feedback returned."),
     };
   });
 

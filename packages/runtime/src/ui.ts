@@ -5,6 +5,8 @@ import type {
   ResultSnapshot,
   ScoreResult,
 } from "./types";
+import { ObjectiveState } from "./types";
+import type { ObjectiveStatusMap } from "./types";
 import { t } from "./locales";
 
 interface SpeechRecognitionAlt {
@@ -85,10 +87,10 @@ textarea { font: inherit; color: inherit; }
 .avatar.you { background: oklch(52% 0.20 255); }
 
 /* Chat log */
-.chat-area { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; }
+.chat-area { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 0; position: relative; display: flex; flex-direction: column; overscroll-behavior: contain; }
 .chat-inner {
   max-width: 680px; margin: 0 auto; padding: 0 16px 16px; width: 100%;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 14px; margin-top: auto;
 }
 .chat-inner.wide { max-width: none; padding: 16px; }
 
@@ -230,13 +232,13 @@ textarea { font: inherit; color: inherit; }
   display: flex; gap: 8px; align-items: flex-start;
 }
 .objective-item.done { border-left-color: oklch(52% 0.18 155); background: oklch(98% 0.03 155); }
+.objective-item.partial { border-left-color: oklch(65% 0.18 85); background: oklch(98% 0.04 85); }
 .objective-item .check {
-  width: 16px; height: 16px; border-radius: 50%;
-  border: 1.5px solid oklch(78% 0.01 255);
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   margin-top: 1px;
 }
-.objective-item.done .check { background: oklch(52% 0.18 155); border-color: oklch(52% 0.18 155); color: white; }
+.objective-item .check svg { display: block; }
+.objective-item.done .check svg { color: oklch(52% 0.18 155); }
 
 /* Chat column */
 .chat-col { flex: 1; display: flex; flex-direction: column; background: oklch(97.5% 0.006 240); min-width: 0; min-height: 0; position: relative; }
@@ -429,7 +431,7 @@ export class UI {
   private ttsEnabled: boolean;
   private messages: MsgRecord[] = [];
   private streamingAssistant = false;
-  private objectivesDone = new Set<string>();
+  private objectivesDone = new Map() as ObjectiveStatusMap;
   private busy = false;
   private ended = false;
   private resultsReady = false;
@@ -589,14 +591,14 @@ export class UI {
     this.addSystemNote(this.tr("errorPrefix", { message }));
   }
 
-  setObjectiveStatus(done: Set<string>): void {
-    this.objectivesDone = new Set(done);
+  setObjectiveStatus(done: ObjectiveStatusMap): void {
+    this.objectivesDone = new Map(done);
     this.renderObjectives();
   }
 
   resetLog(): void {
     this.messages = [];
-    this.objectivesDone.clear();
+    this.objectivesDone = new Map() as ObjectiveStatusMap;
     this.ended = false;
     this.resultsReady = false;
     this.busy = false;
@@ -700,7 +702,7 @@ export class UI {
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = `
-      <div class="modal-card">
+      <div class="modal-card" data-animate="1">
         <div class="modal-head">
           <div>
             <div class="modal-eyebrow">${escapeHtml(this.tr("sessionComplete"))}</div>
@@ -709,24 +711,22 @@ export class UI {
           <button class="modal-close" title="${escapeAttr(this.tr("close"))}">${ICONS.close}</button>
         </div>
         <div class="score-row">
-          <div class="score-num ${grade}">${out10}<span>/10</span></div>
-          <div class="stars">${Array.from({ length: 10 }, (_, i) =>
-            i < out10 ? ICONS.starFilled : ICONS.starEmpty,
-          ).join("")}</div>
+          <div class="score-num ${grade}"><span class="score-anim">0</span><span>/10</span></div>
+          <div class="stars" data-stars="1">${Array.from({ length: 10 }, () => ICONS.starEmpty).join("")}</div>
           <div style="margin-top:8px;font-size:12.5px;color:oklch(55% 0.01 255)">${escapeHtml(this.tr("totalScore", { score: result.total, max: result.maxTotal }))}</div>
         </div>
-        <div class="summary">${escapeHtml(result.summary)}</div>
+        <div class="summary" style="opacity:0;transition:opacity 0.6s">${escapeHtml(result.summary)}</div>
         ${result.perObjective
           .map(
-            (o) => `
-          <div class="per-obj">
+            (o, i) => `
+          <div class="per-obj" data-idx="${i}" style="opacity:0;transform:translateY(12px);transition:opacity 0.5s ease,transform 0.5s ease">
             <h4>${escapeHtml(this.objectiveLabel(o.id))}</h4>
             <div class="sc">${escapeHtml(this.tr("totalScore", { score: o.score, max: o.maxScore }))}</div>
             <div class="tip">${escapeHtml(o.improvement)}</div>
           </div>`,
           )
           .join("")}
-        <button class="close-btn">${escapeHtml(this.tr("closeAndContinue"))}</button>
+        <button class="close-btn" style="opacity:0;transition:opacity 0.4s">${escapeHtml(this.tr("closeAndContinue"))}</button>
       </div>
     `;
     const close = () => {
@@ -741,6 +741,46 @@ export class UI {
     this.debriefNode = backdrop;
     this.root.appendChild(backdrop);
     this.showRestartAction();
+
+    // Animated score count-up + star fill
+    const numEl = backdrop.querySelector(".score-anim") as HTMLElement;
+    const starsContainer = backdrop.querySelector("[data-stars]") as HTMLElement;
+    const summaryEl = backdrop.querySelector(".summary") as HTMLElement;
+    const objEls = backdrop.querySelectorAll(".per-obj");
+    const closeBtn = backdrop.querySelector(".close-btn") as HTMLElement;
+
+    const duration = 800;
+    const start = performance.now();
+
+    function frame(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * out10);
+
+      if (numEl) numEl.textContent = String(current);
+      if (starsContainer) {
+        starsContainer.innerHTML = Array.from({ length: 10 }, (_, i) =>
+          i < current ? ICONS.starFilled : ICONS.starEmpty
+        ).join("");
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        if (summaryEl) summaryEl.style.opacity = "1";
+        objEls.forEach((el, i) => {
+          setTimeout(() => {
+            (el as HTMLElement).style.opacity = "1";
+            (el as HTMLElement).style.transform = "translateY(0)";
+          }, 200 + i * 150);
+        });
+        setTimeout(() => {
+          if (closeBtn) closeBtn.style.opacity = "1";
+        }, 300 + objEls.length * 150);
+      }
+    }
+    requestAnimationFrame(frame);
   }
 
   // ─── Internal helpers ────────────────────────────────────────────
@@ -984,6 +1024,85 @@ export class UI {
     this.renderObjectives();
   }
 
+  /** Build an SVG ring indicator — fills proportionally, no numbers. */
+  private ringIndicator(fraction: number, segmentScores?: number[]): string {
+    const cx = 9, cy = 9, r = 6.5, sw = 2;
+    const green = "oklch(52% 0.18 155)";
+    const amber = "oklch(65% 0.18 85)";
+    const track = "oklch(85% 0.01 240)";
+    const fill = fraction >= 1 ? green : amber;
+
+    // Complete: solid green circle with checkmark
+    if (fraction >= 1) {
+      return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${fill}" stroke-width="${sw}"/>
+        <path d="M5.5 9.5l2.5 2.5 4.5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+
+    // Segmented: each segment fills proportionally to its score
+    if (segmentScores && segmentScores.length > 1) {
+      const segments = segmentScores.length;
+      const gap = 3;
+      const segAngle = (360 - gap * segments) / segments;
+      const half = Math.PI / 180;
+
+      function arcPath(startDeg: number, endDeg: number): string {
+        const sa = (startDeg - 90) * half, ea = (endDeg - 90) * half;
+        const x1 = cx + r * Math.cos(sa), y1 = cy + r * Math.sin(sa);
+        const x2 = cx + r * Math.cos(ea), y2 = cy + r * Math.sin(ea);
+        return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
+      }
+
+      let segs = "";
+      for (let i = 0; i < segments; i++) {
+        const a = i * (segAngle + gap);
+        const b = a + segAngle;
+        const score = Math.max(0, Math.min(100, segmentScores[i]));
+        segs += `<path d="${arcPath(a, b)}" fill="none" stroke="${track}" stroke-width="${sw}" stroke-linecap="round"/>`;
+        if (score > 0) {
+          const mid = a + segAngle * (score / 100);
+          const segFill = score >= 70 ? green : amber;
+          segs += `<path d="${arcPath(a, mid)}" fill="none" stroke="${segFill}" stroke-width="${sw}" stroke-linecap="round"/>`;
+        }
+      }
+      return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none">${segs}</svg>`;
+    }
+
+    // Single arc — fills proportionally, smooth when SVG element persists
+    const circ = 2 * Math.PI * r;
+    return `<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <circle cx="${cx}" cy="${cy}" r="${r}" stroke="${track}" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" stroke="${fill}" stroke-width="${sw}"
+        stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - fraction)}"
+        stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})" style="transition:stroke-dashoffset 0.5s ease"/>
+    </svg>`;
+  }
+
+  /** Update a ring SVG's fill arc to a target fraction, animating smoothly. */
+  private setRingFill(checkEl: HTMLElement, fraction: number): void {
+    const svg = checkEl.querySelector("svg");
+    if (!svg) { checkEl.innerHTML = this.ringIndicator(fraction); return; }
+    // Try the persistent arc first (circle with stroke-dasharray attribute)
+    let arc: SVGCircleElement | null = null;
+    for (const c of svg.querySelectorAll("circle")) {
+      if (c.hasAttribute("stroke-dasharray")) { arc = c; break; }
+    }
+    if (!arc) { checkEl.innerHTML = this.ringIndicator(fraction); return; }
+    const circ = parseFloat(arc.getAttribute("stroke-dasharray")!);
+    if (!circ) { checkEl.innerHTML = this.ringIndicator(fraction); return; }
+
+    const target = circ * (1 - fraction);
+    const current = parseFloat(arc.getAttribute("stroke-dashoffset") || "0");
+
+    // Animate from current to target, then commit final value to attribute
+    const animation = arc.animate(
+      [{ strokeDashoffset: String(current) }, { strokeDashoffset: String(target) }],
+      { duration: 500, easing: "ease" }
+    );
+    animation.onfinish = () => arc.setAttribute("stroke-dashoffset", String(target));
+  }
+
   private renderObjectives(): void {
     const host = this.root.querySelector("[data-objectives]") as HTMLElement | null;
     if (!host) return;
@@ -991,15 +1110,69 @@ export class UI {
       host.innerHTML = `<div style="font-size:12.5px;color:oklch(60% 0.01 255)">${escapeHtml(this.tr("noObjectives"))}</div>`;
       return;
     }
-    host.innerHTML = this.comp.objectives
-      .map((o) => {
-        const done = this.objectivesDone.has(o.id);
-        return `<div class="objective-item${done ? " done" : ""}">
-          <span class="check">${done ? ICONS.check : ""}</span>
+
+    // First render: create the full structure
+    if (!host.firstElementChild) {
+      host.innerHTML = this.comp.objectives
+        .map((o, idx) => `<div class="objective-item" data-oidx="${idx}">
+          <span class="check">${this.ringIndicator(0)}</span>
           <span>${escapeHtml(o.text || o.id)}</span>
-        </div>`;
-      })
-      .join("");
+        </div>`)
+        .join("");
+    }
+
+    // Subsequent renders: update each item's ring SVG in-place
+    this.comp.objectives.forEach((o, idx) => {
+      const item = host.querySelector(`[data-oidx="${idx}"]`);
+      if (!item) return;
+      const checkEl = item.querySelector(".check");
+      if (!checkEl) return;
+
+      const status = this.objectivesDone.get(o.id);
+      if (!status || status.state === ObjectiveState.NotMet) {
+        item.className = "objective-item";
+        checkEl.innerHTML = this.ringIndicator(0);
+        return;
+      }
+
+      if (status.state === ObjectiveState.Partial) {
+        item.className = "objective-item partial";
+        const label = status.count || "";
+        let fraction = 0.25;
+        let segScores: number[] | undefined;
+        if (label && /^\d+(\.\d+)?(\s*,\s*\d+(\.\d+)?)+$/.test(label)) {
+          const scores = label.split(",").map(s => Number(s.trim()));
+          if (scores.length > 1 && scores.every(s => Number.isFinite(s))) {
+            const total = scores.reduce((a, b) => a + b, 0);
+            fraction = Math.min(total / (scores.length * 100), 0.99);
+            segScores = scores;
+          }
+        }
+        if (!segScores && label.includes("/")) {
+          const parts = label.split("/");
+          const n = Number(parts[0]), d = Number(parts[1]);
+          if (n > 0 && d > 0) {
+            fraction = Math.min(n / d, 0.99);
+            segScores = Array(d).fill(0).map((_, i) => i < n ? 100 : 0);
+          }
+        }
+        // Ensure at least a sliver of fill shows for partial state, even with 0 scores
+        fraction = Math.max(fraction, 0.05);
+        if (segScores) {
+          segScores = segScores.map(s => s === 0 ? 5 : s);
+        }
+        if (segScores && segScores.length > 1) {
+          checkEl.innerHTML = this.ringIndicator(fraction, segScores);
+        } else {
+          this.setRingFill(checkEl, fraction);
+        }
+        return;
+      }
+
+      // State 2 - complete
+      item.className = "objective-item done";
+      checkEl.innerHTML = this.ringIndicator(1);
+    });
   }
 
   private renderInputBarNode(wide = false): HTMLElement {
@@ -1067,9 +1240,20 @@ export class UI {
     if (exportBtn) exportBtn.disabled = !this.resultsReady;
   }
 
+  private shouldAutoScroll(area: HTMLElement): boolean {
+    // Only auto-scroll if user is within 60px of the bottom
+    return area.scrollHeight - area.scrollTop - area.clientHeight < 60;
+  }
+
+  private scrollToBottom(area: HTMLElement): void {
+    area.scrollTop = area.scrollHeight;
+  }
+
   private renderMessages(): void {
     const log = this.root.querySelector("[data-log]") as HTMLElement | null;
     if (!log) return;
+    const area = log.parentElement;
+    const autoScroll = area ? this.shouldAutoScroll(area) : true;
     log.innerHTML = this.messages
       .map((m) => {
         if (m.role === "system-note") {
@@ -1090,8 +1274,7 @@ export class UI {
       })
       .join("");
     this.renderTyping();
-    const area = log.parentElement;
-    if (area) area.scrollTop = area.scrollHeight;
+    if (area && autoScroll) this.scrollToBottom(area);
     this.updateTimerDisplay();
   }
 
@@ -1110,7 +1293,7 @@ export class UI {
       `;
       log.appendChild(row);
       const area = log.parentElement;
-      if (area) area.scrollTop = area.scrollHeight;
+      if (area && this.shouldAutoScroll(area)) this.scrollToBottom(area);
     } else if (existing) {
       existing.remove();
     }

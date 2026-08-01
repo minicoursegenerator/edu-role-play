@@ -2,6 +2,7 @@ import type {
   ActivityEvent,
   ChatMessage,
   CompositionData,
+  ObjectiveStatusMap,
   ResultSnapshot,
   ScoreResult,
 } from "./types";
@@ -24,7 +25,7 @@ export function createResultSnapshot(args: {
   completedAt: string;
   durationSeconds: number;
   history: ChatMessage[];
-  completedObjectives: Set<string>;
+  completedObjectives: ObjectiveStatusMap;
   result: ScoreResult;
   events: ActivityEvent[];
 }): ResultSnapshot {
@@ -53,7 +54,7 @@ export function createResultSnapshot(args: {
       summary: result.summary,
       perObjective: result.perObjective,
     },
-    completedObjectives: Array.from(args.completedObjectives),
+    completedObjectives: Array.from(args.completedObjectives.keys()),
     transcript: args.history
       .filter((m) => m.role !== "system")
       .map((m) => ({ role: m.role, content: m.content })),

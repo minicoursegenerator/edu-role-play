@@ -21,10 +21,13 @@ export function createProxyProvider(config: RuntimeConfig): Provider {
     const body: Record<string, unknown> = {
       messages,
       temperature: opts?.temperature ?? 0.7,
-      maxTokens: 512,
+      // Use a higher limit for scoring transcripts; proxy caps at 1024
+      maxTokens: opts?.maxTokens ?? 2048,
     };
     if (model) body.model = model;
     if (stream) body.stream = true;
+    // Request JSON mode when caller opts in (reduces format deviations)
+    if (opts?.jsonMode) body.responseFormat = { type: "json_object" };
     return body;
   }
 

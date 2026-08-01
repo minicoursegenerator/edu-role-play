@@ -7,6 +7,7 @@ import { scoreTranscript } from "./scoring";
 import { createScorm12Adapter } from "./scorm";
 import { t } from "./locales";
 import type { ActivityEvent, ChatMessage, Provider, ResultSnapshot, RuntimeConfig } from "./types";
+import { ObjectiveState, type ObjectiveStatusMap } from "./types";
 import { UI } from "./ui";
 
 function looksLikeNetworkBlock(err: unknown): boolean {
@@ -109,7 +110,8 @@ export async function mount(host?: HTMLElement): Promise<void> {
   baked = applyProxyOverride(baked);
   const provider = createProvider(baked);
   let history: ChatMessage[] = [];
-  let completedObjectives = new Set<string>();
+  let completedObjectives = new Map() as ObjectiveStatusMap;
+  let debugMode = false;
   let resultSnapshot: ResultSnapshot | null = null;
   let turn = 0;
   let ended = false;
@@ -177,6 +179,181 @@ export async function mount(host?: HTMLElement): Promise<void> {
   ui = new UI(root, comp, {
     onSend: async (text) => {
       if (ended) return;
+
+      // Debug mode: system introspection commands
+      const debugMatch = text.match(/^Debug:\s*(.*)/is);
+      if (debugMatch) {
+        const query = debugMatch[1].trim();
+        if (!query) return;
+
+        ui.appendMessage({ role: "user", content: text });
+
+        // Debug: state — show current detection state
+        if (/^state|^detected/i.test(query)) {
+          const lines = Array.from(completedObjectives.entries()).map(([id, s]) => {
+            const st = s.state === ObjectiveState.Complete ? "GREEN" : s.state === ObjectiveState.Partial ? "YELLOW" : "GREY";
+            return `${id}: ${st}${s.count ? ` (${s.count})` : ""}`;
+          });
+          ui.addSystemNote(`🔧 Detection state:\n${lines.join("\n") || "(none detected)"}\nTurn: ${turn}/${turnCap}`);
+          return;
+        }
+
+        // Debug: filter "text" — test what the code filter would decide
+        const filterMatch = query.match(/^filter\s+"([^"]+)"|^filter\s+'([^']+)'/i);
+        if (filterMatch) {
+          const testText = filterMatch[1] || filterMatch[2];
+          const wc = testText.split(/\s+/).filter(Boolean).length;
+          const len = testText.length;
+          const isPleasantry = /^(hi|hello|hey|how are you|how do you do|nice to meet|good to see|greetings|thanks|thank you|good|nice|ok|okay|yes|no|sure|please|lol|haha|ahoy|yo|sup|cheers|bye|goodbye|see ya|cya)[\s.!?,]*$/i.test(testText);
+          const hasQ = /[?]/.test(testText) || /^(what|how|why|who|where|when|do|did|can|could|would|will|is|are|was|were|have|has)\s/i.test(testText);
+          const hasTW = /(paul|lydia|baptis|convert|belie|christ|jesus|synagogue|roman|jew|gentil|pray|worship|trade|purple|dye|cloth|thyatira|philippi|spirit|church|community|letter|gospel|apostle|god|faith|messiah|river|gangites|preach|teacher|crucif|resurrect)/i.test(testText);
+          const isNonsense = wc >= 3 && !hasQ && len < 50 && !hasTW;
+          const substantive = wc >= 3 && len > 10 && !isPleasantry && !isNonsense;
+          ui.addSystemNote(`🔧 Filter check: "${testText}" — ${wc} words, ${len} chars\npleasantry=${isPleasantry} question=${hasQ} topic=${hasTW} → ${substantive ? "PASSES" : "BLOCKED"}`);
+          return;
+        }
+
+        // Debug: detect "text" — run actual detection on sample text
+        const detectMatch = query.match(/^detect\s+"([^"]+)"|^detect\s+'([^']+)'/i);
+        if (detectMatch) {
+          const testText = detectMatch[1] || detectMatch[2];
+          const wc = testText.split(/\s+/).filter(Boolean).length;
+          const len = testText.length;
+          // Run code filter
+          const isPleasantry = /^(hi|hello|hey|how are you|how do you do|nice to meet|good to see|greetings|thanks|thank you|good|nice|ok|okay|yes|no|sure|please|lol|haha|ahoy|yo|sup|cheers|bye|goodbye|see ya|cya)[\s.!?,]*$/i.test(testText);
+          const hasQ = /[?]/.test(testText) || /^(what|how|why|who|where|when|do|did|can|could|would|will|is|are|was|were|have|has)\s/i.test(testText);
+          const hasTW = /(paul|lydia|baptis|convert|belie|christ|jesus|synagogue|roman|jew|gentil|pray|worship|trade|purple|dye|cloth|thyatira|philippi|spirit|church|community|letter|gospel|apostle|god|faith|messiah|river|gangites|preach|teacher|crucif|resurrect)/i.test(testText);
+          const isNonsense = wc >= 3 && !hasQ && len < 50 && !hasTW;
+          const blocked = wc < 3 || len <= 10 || isPleasantry || isNonsense;
+
+          if (blocked) {
+            const reasons = [];
+            if (wc < 3) reasons.push("less than 3 words");
+            if (len <= 10) reasons.push("too short");
+            if (isPleasantry) reasons.push("pleasantry match");
+            if (isNonsense) reasons.push("nonsense match");
+            ui.addSystemNote(`🔧 Detect "${testText}": BLOCKED by code filter (${reasons.join(", ")}) — LLM not called`);
+          } else {
+            // Call the actual detector with a synthetic history
+            try {
+              const synthHistory: ChatMessage[] = [
+                ...history.slice(-2), // last 2 messages for minimal context
+                { role: "user", content: testText },
+              ];
+              // We need to import detectCompletedObjectives — it's already imported at top
+              const result = await detectCompletedObjectives(provider, comp, synthHistory);
+              if (result.size === 0) {
+                ui.addSystemNote(`🔧 Detect "${testText}": PASSES filter → LLM returned NO objectives detected`);
+              } else {
+                const lines = Array.from(result.entries()).map(([id, s]) =>
+                  `${id} (state ${s.state === 2 ? "GREEN" : "YELLOW"})${s.count ? ` scores=[${s.count}]` : ""}`
+                );
+                ui.addSystemNote(`🔧 Detect "${testText}": PASSES filter → DETECTED:\n${lines.join("\n")}`);
+              }
+            } catch (err) {
+              ui.addSystemNote(`🔧 Detect "${testText}": PASSES filter → LLM call ERROR: ${(err as Error).message}`);
+            }
+          }
+          return;
+        }
+
+        // Debug: on / off — toggle auto-debug output
+        if (/^on$/i.test(query)) {
+          debugMode = true;
+          ui.addSystemNote("🔧 Debug mode ON — filter and detection results will be shown automatically");
+          return;
+        }
+        if (/^off$/i.test(query)) {
+          debugMode = false;
+          ui.addSystemNote("🔧 Debug mode OFF");
+          return;
+        }
+
+        // Debug: anything else — show filter analysis, then ask LLM with full context
+        let filterAnalysis = "";
+        const quotedMatch = query.match(/"([^"]+)"|'([^']+)'/);
+        if (quotedMatch) {
+          const quoted = quotedMatch[1] || quotedMatch[2];
+          const wc = quoted.split(/\s+/).filter(Boolean).length;
+          const len = quoted.length;
+          const pleasant = /^(hi|hello|hey|how are you|how do you do|nice to meet|good to see|greetings|thanks|thank you|good|nice|ok|okay|yes|no|sure|please|lol|haha|ahoy|yo|sup|cheers|bye|goodbye|see ya|cya)[\s.!?,]*$/i.test(quoted);
+          const hasQ = /[?]/.test(quoted) || /^(what|how|why|who|where|when|do|did|can|could|would|will|is|are|was|were|have|has)\s/i.test(quoted);
+          const hasTW = /(paul|lydia|baptis|convert|belie|christ|jesus|synagogue|roman|jew|gentil|pray|worship|trade|purple|dye|cloth|thyatira|philippi|spirit|church|community|letter|gospel|apostle|god|faith|messiah|river|gangites|preach|teacher|crucif|resurrect)/i.test(quoted);
+          const nonsense = wc >= 3 && !hasQ && len < 50 && !hasTW;
+          const blocked = wc < 3 || len <= 10 || pleasant || nonsense;
+          if (blocked) {
+            const reasons: string[] = [];
+            if (wc < 3) reasons.push(`${wc} words < 3`);
+            if (len <= 10) reasons.push("too short");
+            if (pleasant) reasons.push("pure pleasantry");
+            if (nonsense) reasons.push("no question, no topic word, under 40 chars");
+            filterAnalysis = `Code filter: BLOCKED (${reasons.join(", ")}). The message was never sent to the LLM for evaluation.`;
+          } else {
+            filterAnalysis = `Code filter: PASSED (${wc} words, ${len} chars). Message was sent to LLM for evaluation.`;
+          }
+          ui.addSystemNote(`🔧 Filter: ${filterAnalysis}`);
+        }
+
+        // Now send the user's question to the LLM with full debug context
+        ui.appendMessage({ role: "user", content: text });
+        ui.setBusy(true);
+        ui.showTyping(true);
+
+        // Build comprehensive debug context
+        const detectTexts = comp.objectives.map(o =>
+          `- ${o.id} (${completedObjectives.get(o.id)?.state === 2 ? "GREEN" : completedObjectives.get(o.id)?.state === 1 ? "YELLOW" : "GREY"}): ${o.detectText}`
+        ).join("\n");
+        const rubricText = comp.rubric.map(c =>
+          `- ${c.objectiveId} (weight ${c.weight}): ${c.text}`
+        ).join("\n");
+        const recentHistory = history.filter(m => m.role !== "system").slice(-6).map(m =>
+          `${m.role === "user" ? "LEARNER" : "PERSONA"}: ${m.content.slice(0, 200)}`
+        ).join("\n");
+        const convHistory = history.filter(m => m.role === "user").slice(-4).map(m =>
+          `LEARNER: ${m.content.slice(0, 200)}`
+        ).join("\n");
+
+        const debugPrompt = `You are a debug assistant analyzing an edu-role-play detection system. The system uses a code-level filter, then sends learner messages to an LLM detector with AI-facing objective text.
+
+Current detection state:
+${comp.objectives.map(o => `- ${o.id}: ${completedObjectives.get(o.id)?.state === 2 ? "GREEN" : completedObjectives.get(o.id)?.state === 1 ? "YELLOW" : "GREY"}`).join("\n")}
+
+AI-facing objective texts (what the detector LLM sees):
+${detectTexts}
+
+Rubric (used by final scorer):
+${rubricText}
+
+${filterAnalysis ? `Filter analysis for quoted text:\n${filterAnalysis}\n` : ""}
+
+Recent learner messages (only these are sent to the detector):
+${convHistory || "(no learner messages yet)"}
+
+Full recent conversation (for context):
+${recentHistory || "(no history yet)"}
+
+The user's question is: ${query}
+
+Answer specifically — analyze why the detection system made the decision it did, referencing the actual objective texts and filter logic. Be concise but thorough.`;
+
+        try {
+          const reply = await provider.chat(
+            [
+              { role: "system", content: "You are a debug assistant for an edu-role-play objective detection system. Analyze the situation using the provided system state and objective texts. Answer specifically, referencing objective IDs and filter rules. Be concise." },
+              { role: "user", content: debugPrompt },
+            ],
+            { temperature: 0.3 },
+          );
+          ui.showTyping(false);
+          ui.addSystemNote(`🔧 Debug analysis:\n${reply}`);
+        } catch (err) {
+          ui.showTyping(false);
+          ui.showError(`Debug error: ${(err as Error).message}`);
+        }
+        ui.setBusy(false);
+        return;
+      }
+
       history.push({ role: "user", content: text });
       turn += 1;
       record("turn", { turn, role: "user" });
@@ -197,12 +374,83 @@ export async function mount(host?: HTMLElement): Promise<void> {
       }
       ui.setBusy(false);
 
-      if (turn > 0 && turn % checkEvery === 0) {
-        const completed = await detectCompletedObjectives(provider, comp, history);
-        completedObjectives = completed;
-        record("objective_check", { completed: Array.from(completed) });
-        ui.setObjectiveStatus(completed);
-        const allMet = comp.objectives.every((o) => completed.has(o.id));
+      // Skip detection on non-substantive messages (greetings, pleasantries)
+      const trimmed = text.trim();
+      const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+      // Pure pleasantries and social niceties (nothing substantive)
+      const isPleasantry = /^(hi|hello|hey|how are you|how do you do|nice to meet|good to see|greetings|thanks|thank you|good|nice|ok|okay|yes|no|sure|please|lol|haha|ahoy|yo|sup|cheers|bye|goodbye|see ya|cya)[\s.!?,]*$/i.test(trimmed);
+      // Generic nonsense detector — catches role-play-breaking messages
+      // without enumerating specific words. A message is nonsense if it's
+      // short, doesn't ask a question, and lacks any substantive content.
+      const hasQuestion = /[?]/.test(trimmed) || /^(what|how|why|who|where|when|do|did|can|could|would|will|is|are|was|were|have|has)\s/i.test(trimmed);
+      const isNonsense = wordCount >= 3 && !hasQuestion && trimmed.length < 50 && !/(paul|lydia|baptis|convert|belie|christ|jesus|synagogue|roman|jew|gentil|pray|worship|trade|purple|dye|cloth|thyatira|philippi|spirit|church|community|letter|gospel|apostle|god|faith|messiah|river|gangites|preach|teacher|crucif|resurrect)/i.test(trimmed);
+      // Need at least 3 words AND enough length to be substantive AND not nonsense
+      const isSubstantive = wordCount >= 3 && trimmed.length > 10 && !isPleasantry && !isNonsense;
+
+      // Auto-debug: comprehensive pipeline trace
+      if (debugMode) {
+        const reasons: string[] = [];
+        if (wordCount < 3) reasons.push(`words=${wordCount}`);
+        if (trimmed.length <= 10) reasons.push(`chars=${trimmed.length}≤10`);
+        if (isPleasantry) reasons.push("pleasantry=yes");
+        if (isNonsense) reasons.push("nonsense=yes");
+        const filterResult = isSubstantive ? "PASSED" : `BLOCKED (${reasons.join(", ")})`;
+        if (!isSubstantive) {
+          const contentPreview = trimmed.length > 40 ? trimmed.slice(0, 40) + "..." : trimmed;
+          ui.addSystemNote(`⚙ [turn ${turn}] Filter: "${contentPreview}" → ${filterResult}`);
+        }
+      }
+
+      if (turn > 0 && turn % checkEvery === 0 && isSubstantive) {
+        let trace = `⚙ [turn ${turn}] Filter: PASSED\n`;
+        trace += `  Input (${trimmed.length} chars, ${wordCount} words): "${trimmed.length > 60 ? trimmed.slice(0,60)+"..." : trimmed}"\n`;
+
+        if (debugMode) ui.addSystemNote(trace);
+        const before = new Map(completedObjectives);
+        const latest = await detectCompletedObjectives(provider, comp, history);
+
+        if (debugMode) {
+          let detTrace = `  LLM returned: ${latest.size} objective(s)\n`;
+          for (const [id, s] of latest) {
+            const aiText = comp.objectives.find(o => o.id === id)?.detectText || comp.objectives.find(o => o.id === id)?.text || id;
+            const preview = aiText.length > 80 ? aiText.slice(0, 80) + "..." : aiText;
+            detTrace += `    ${id}: state=${s.state === 2 ? "COMPLETE" : "PARTIAL"}${s.count ? ` scores=[${s.count}]` : ""}\n`;
+            detTrace += `      AI objective: "${preview}"\n`;
+          }
+          ui.addSystemNote(detTrace);
+        }
+        // Merge: first detection → yellow, re-detected → green
+        for (const [id] of latest) {
+          const prev = completedObjectives.get(id);
+          if (!prev) {
+            completedObjectives.set(id, { state: ObjectiveState.Partial });
+          } else if (prev.state === ObjectiveState.Partial) {
+            completedObjectives.set(id, { state: ObjectiveState.Complete });
+          }
+        }
+        record("objective_check", { completed: Array.from(completedObjectives.keys()) });
+        ui.setObjectiveStatus(completedObjectives);
+
+        // Show merge result in debug mode
+        if (debugMode) {
+          const changes: string[] = [];
+          for (const [id, s] of completedObjectives) {
+            const b = before.get(id);
+            const bSt = b ? (b.state === 2 ? "GREEN" : b.state === 1 ? "YELLOW" : "GREY") : "NONE";
+            const aSt = s.state === 2 ? "GREEN" : s.state === 1 ? "YELLOW" : "GREY";
+            if (bSt !== aSt) changes.push(`${id}: ${bSt} → ${aSt}`);
+          }
+          if (changes.length > 0) {
+            ui.addSystemNote(`  Merge: ${changes.join(", ")}`);
+          } else {
+            ui.addSystemNote(`  Merge: no state changes`);
+          }
+        }
+
+        const allMet = comp.objectives.every((o) => {
+          const s = completedObjectives.get(o.id);
+          return s && s.state === ObjectiveState.Complete;
+        });
         if (allMet) {
           ui.addSystemNote(t(comp.locale, "allObjectivesMet"));
           window.setTimeout(() => {
@@ -286,7 +534,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
     },
     onRestart: () => {
       history = [];
-      completedObjectives = new Set<string>();
+      completedObjectives = new Map() as ObjectiveStatusMap;
       resultSnapshot = null;
       events = [];
       sessionId = createSessionId();
@@ -317,7 +565,7 @@ export async function mount(host?: HTMLElement): Promise<void> {
     ui.addSystemNote(t(comp.locale, "scoringConversation"));
     try {
       record("scoring");
-      const result = await scoreTranscript(provider, comp, history);
+      const result = await scoreTranscript(provider, comp, history, completedObjectives);
       resultSnapshot = createResultSnapshot({
         comp,
         sessionId,

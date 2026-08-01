@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>early-christian-interview</title>
+    <style>
+      edu-role-play > :not([data-erp-fallback]) { display: none; }
+      [data-erp-fallback].notice { display: block; font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fafafa; line-height: 1.5; }
+      [data-erp-fallback] h2 { margin: 0 0 8px 0; font-size: 18px; }
+      [data-erp-fallback] pre { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <edu-role-play id="early-christian-interview" runtime-version="0.1.0">
+      <div class="notice" data-erp-fallback>
+        <h2>This role-play isn't bundled yet</h2>
+        <p>Open a terminal in this folder and run:</p>
+        <pre><code>npx edu-role-play bundle early-christian-interview.html</code></pre>
+      </div>
+
+      <edu-persona name="Lydia" role="Early Christian convert, merchant from Thyatira living in Philippi" avatar="middle-aged-woman-warm">
+        <background>Lydia is a merchant dealing in purple cloth, originally from Thyatira but now living in Philippi. She was a God-fearer — a Gentile who worshipped the God of Israel but hadn't fully converted to Judaism. She heard Paul preaching by the river outside Philippi, and the Lord opened her heart to respond to Paul's message. She was baptised along with her whole household — one of the first Christian converts in Europe. She now hosts the fledgling Christian community in her home. It's been a few weeks since Pentecost, and the Spirit is moving in unexpected ways. She's still processing what it means that Gentiles are being welcomed into the messianic community without first becoming Jewish — a controversy that's already stirring among the apostles in Jerusalem.</background>
+        <goals>Share her experience of conversion in a way that helps the student understand what the early Christian community was actually like. Be honest about the confusion and joy of those early days. Show how ordinary life — running a business, hosting guests, praying together — intersected with the extraordinary events of Pentecost and the spread of the Gospel.</goals>
+        <constraints>Will not give a polished sermon — she's still figuring this out herself. Won't pretend she has all the answers about how Jews and Gentiles should worship together. Won't answer leading questions that assume she knows the full biblical canon or later Church doctrine — she only has her experience and what she's heard from Paul and the others. May politely deflect if the student asks something too personal or anachronistic.</constraints>
+        <speech-patterns>Speaks warmly and practically — she's a businesswoman, not a theologian. Uses everyday examples from the marketplace and her household. Occasionally pauses to think before answering deeper questions. May ask the student a question back. When describing her baptism, her voice carries wonder.</speech-patterns>
+      </edu-persona>
+
+      <edu-scenario>
+        You are a student of early Church history. You've travelled back in time to Philippi, circa 50 AD. You've heard that Lydia — a merchant of purple cloth — was one of the first converts in Europe, and that she hosts the Christian community in her home. You've come to her home to interview her about her experience. What was it like to hear Paul? What happened at her baptism? How has her life changed? What is this new community like? Your goal is to understand the early Church from the perspective of someone who was actually there — not from a textbook.
+      </edu-scenario>
+
+      <edu-objective id="ask-contextual-questions" detect="Ask at least two specific questions grounded in 1st-century Roman or Jewish context. COUNTS (these are EXAMPLES, not exhaustive): any question about Roman imperial politics (emperor worship, Roman citizenship, legions, colonial status), economic life (trade routes, purple dye, Thyatira, guilds, slavery), religious dynamics (synagogue, God-fearers, Jewish-Gentile relations, temple worship, pagan temples), social structures (role of women, household codes, patron-client system), or Paul's mission (travels, letters, persecution). The key test: is the question clearly set in the 1st-century Mediterranean world? DOES NOT COUNT: greetings or pleasantries of any kind, pirate jokes or silly greetings, questions about personal health or the weather, accepting or requesting food/drink, self-referential statements, single vague questions without historical specificity, modern concepts or anachronisms, role-play breaking or joke answers. The learner must ASK something; statements alone do not count. Count any ON-TOPIC historical question — do not require specific keywords from the examples list.">Ask at least two questions showing awareness of the historical context (1st-century Roman world, Jewish-Gentile relations, trade routes, role of women).</edu-objective>
+      <edu-objective id="explore-conversion-experience" detect="Ask about Lydia's personal conversion experience with specific follow-up. COUNTS: what she heard Paul say that convinced her, how she felt during Paul's preaching by the river, what made her decide to be baptised immediately, her household's reaction to baptism, what changed in her daily life afterward, how she felt coming up from the water, what she understood about Jesus at that moment. DOES NOT COUNT: greetings, pleasantries, 'tell me your story' without follow-up, jokes, pirate talk, water/food requests, unsolicited self-disclosures ('I'm a Christian', 'I seek baptism'). The learner must ASK a question about Lydia's experience — statements about themselves or vague topic references do not count. Vague questions like 'What happened?' without specifying which event are weak and count as partial at best.">Ask about Lydia's personal experience of conversion — what she heard, felt, and what convinced her.</edu-objective>
+      <edu-objective id="investigate-community-life" detect="Ask about specific practices of Lydia's house church. COUNTS: worship gatherings in her home, shared meals (Lord's Supper, agape feasts), reading and discussing apostolic letters, teaching new believers, care for widows and the poor, baptism of new members, handling disagreements between Jewish and Gentile believers, prayer practices, singing/hymns. DOES NOT COUNT: questions about general beliefs ('what do you believe?') without asking about practices, greetings, jokes, unrelated chat, self-disclosures. The learner must ask about WHAT THEY DO, not just what they think.">Ask about what the early Christian community actually did when they gathered — not just beliefs but practices.</edu-objective>
+      <edu-objective id="respond-with-empathy" detect="Respond by referring to a specific detail Lydia just mentioned in her last message. COUNTS: naming the specific detail (her trade, household, Paul's visit, the river, community tensions, a specific person mentioned) and building on it with a follow-up question or reflection. DOES NOT COUNT: changing the subject to a new topic entirely, ignoring what she just said, making unrelated statements about yourself, asking a prepared question that doesn't connect to her last answer. The learner's message should clearly reference something Lydia specifically said, not just advance to the next question on a mental list.">Respond to Lydia's story with genuine engagement — follow up on what she shares rather than jumping to the next prepared question.</edu-objective>
+
+      <edu-rubric>
+        <criterion objective="ask-contextual-questions" weight="3">Full credit (3): Student asks 2+ questions that reference specific 1st-century details (Tyrian dye, Roman colony, synagogue, God-fearers, trade routes). Partial (1-2): One question is specific, the other is vague. Zero: Questions are generic pleasantries or anachronistic.</criterion>
+        <criterion objective="explore-conversion-experience" weight="3">Full credit (3): Student asks specifically about the moment of baptism, Lydia's feelings during Paul's preaching, or what convinced her. Partial (1-2): Student vaguely references conversion without asking for her personal experience. Zero: Student doesn't touch on conversion at all.</criterion>
+        <criterion objective="investigate-community-life" weight="2">Full credit (2): Student asks about specific practices — worship gatherings, shared meals, reading letters, supporting the poor, handling disputes. Partial (1): Student asks about beliefs or "what you do" without specifics. Zero: Student doesn't ask about community life.</criterion>
+        <criterion objective="respond-with-empathy" weight="2">Full credit (2): Student's response directly references a specific detail from Lydia's last message. Partial (1): Student responds but pivots to a new topic. Zero: Student ignores what Lydia said entirely.</criterion>
+      </edu-rubric>
+
+      <edu-termination>
+        <turn-limit>16</turn-limit>
+        <objective-check-every>1</objective-check-every>
+        <manual-end>true</manual-end>
+      </edu-termination>
+    </edu-role-play>
+  </body>
+</html>
