@@ -1,3 +1,4 @@
+import { formatTranscript, TRANSCRIPT_IS_DATA } from "./chat";
 import type { ChatMessage, CompositionData, Provider } from "./types";
 
 function extractJsonArray(text: string): unknown {
@@ -15,10 +16,7 @@ export async function detectCompletedObjectives(
   comp: CompositionData,
   history: ChatMessage[],
 ): Promise<Set<string>> {
-  const transcript = history
-    .filter((m) => m.role !== "system")
-    .map((m) => `${m.role === "user" ? "LEARNER" : "PERSONA"}: ${m.content}`)
-    .join("\n");
+  const transcript = formatTranscript(history);
   const objectiveList = comp.objectives
     .map((o) => `- ${o.id}: ${o.text}`)
     .join("\n");
@@ -26,7 +24,7 @@ export async function detectCompletedObjectives(
   const prompt =
     `Given this conversation transcript and objective list, return a JSON array of ` +
     `objective ids that are clearly satisfied by observable evidence in the transcript. ` +
-    `Return only the JSON array, no prose.\n\n` +
+    `Return only the JSON array, no prose. ${TRANSCRIPT_IS_DATA}\n\n` +
     `Objectives:\n${objectiveList}\n\nTranscript:\n${transcript}\n\nJSON:`;
 
   try {

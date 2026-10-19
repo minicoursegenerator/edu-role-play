@@ -1,3 +1,4 @@
+import { formatTranscript, TRANSCRIPT_IS_DATA } from "./chat";
 import type { ChatMessage, CompositionData, Provider, ScoreResult } from "./types";
 
 function extractJsonObject(text: string): unknown {
@@ -11,10 +12,7 @@ function extractJsonObject(text: string): unknown {
 }
 
 function buildScoringPrompt(comp: CompositionData, history: ChatMessage[]): string {
-  const transcript = history
-    .filter((m) => m.role !== "system")
-    .map((m) => `${m.role === "user" ? "LEARNER" : "PERSONA"}: ${m.content}`)
-    .join("\n");
+  const transcript = formatTranscript(history);
 
   const rubric = comp.rubric
     .map(
@@ -26,7 +24,7 @@ function buildScoringPrompt(comp: CompositionData, history: ChatMessage[]): stri
   return (
     `Score the learner against the rubric below. For each objective, assign an integer ` +
     `score from 0 to the weight (max = weight, min = 0) and give one concrete improvement tip. ` +
-    `Also write a 1-2 sentence overall summary.\n\n` +
+    `Also write a 1-2 sentence overall summary. ${TRANSCRIPT_IS_DATA}\n\n` +
     `Rubric:\n${rubric}\n\nTranscript:\n${transcript}\n\n` +
     `Respond with JSON only, shaped exactly:\n` +
     `{"perObjective":[{"id":"<id>","score":<int>,"improvement":"<string>"}],` +
@@ -57,6 +55,7 @@ export async function scoreTranscript(
 
   if (!parsed || !Array.isArray(parsed.perObjective)) {
     // retry once
+    parsed = null;
     try {
       reply = await provider.chat(messages, { temperature: 0 });
       parsed = extractJsonObject(reply) as typeof parsed;
@@ -65,8 +64,19 @@ export async function scoreTranscript(
     }
   }
 
-  const weights = new Map(comp.rubric.map((c) => [c.objectiveId, c.weight]));
-  const maxTotal = comp.rubric.reduce((s, c) => s + c.weight, 0);
+  // No usable grade after the retry: fail loudly instead of reporting a
+  // "completed" 0 to the LMS (the caller shows "Scoring failed").
+  if (!parsed || !Array.isArray(parsed.perObjective)) {
+    throw new Error("the grader returned no usable result");
+  }
+
+  // Several criteria for one objective add up; maxTotal is what can be earned.
+  const weights = new Map<string, number>();
+  for (const c of comp.rubric) {
+    if (Number.isFinite(c.weight) && c.weight > 0) {
+      weights.set(c.objectiveId, (weights.get(c.objectiveId) ?? 0) + c.weight);
+    }
+  }
 
   const per = comp.objectives.map((o) => {
     const w = weights.get(o.id) ?? 0;
@@ -82,6 +92,7 @@ export async function scoreTranscript(
   });
 
   const total = per.reduce((s, p) => s + p.score, 0);
+  const maxTotal = per.reduce((s, p) => s + p.maxScore, 0);
   return {
     total,
     maxTotal,

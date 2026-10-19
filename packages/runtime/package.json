@@ -29,7 +29,8 @@
   "scripts": {
     "build": "node build.mjs",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "node --test test/grading.test.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",
